@@ -272,15 +272,21 @@ function CoachSettings() {
     setChecking(false);
   };
 
+  const looksLikeApiKey = token.trim().startsWith('sk-ant-');
   const message =
-    checking
+    looksLikeApiKey
+      ? {
+          text: 'That’s your Anthropic API key, not the coach password. Use the APP_TOKEN value from Render → rep-coach → Environment.',
+          color: colors.sand,
+        }
+      : checking
       ? { text: 'Checking… this can take up to a minute if the coach was asleep.', color: colors.textMuted }
       : dirty
         ? null
         : status === 'ok'
           ? { text: 'Connected ✓ Your coach is ready.', color: colors.latte }
           : status === 'unauthorized'
-            ? { text: 'Wrong coach password. Double-check it and try again.', color: colors.sand }
+            ? { text: 'Wrong coach password. Use the APP_TOKEN value from Render → rep-coach → Environment (not your Anthropic API key).', color: colors.sand }
             : status === 'unreachable'
               ? { text: 'Can’t reach the coach link. Check the link (it should start with https://) and your internet.', color: colors.sand }
               : null;
@@ -312,7 +318,7 @@ function CoachSettings() {
         title={dirty || status !== 'ok' ? 'Save & test' : 'Test again'}
         icon={status === 'ok' && !dirty ? 'checkmark' : 'link-outline'}
         loading={checking}
-        disabled={!url.trim() || !token.trim()}
+        disabled={!url.trim() || !token.trim() || looksLikeApiKey}
         onPress={save}
       />
       {message ? <Body style={{ fontSize: 13, color: message.color }}>{message.text}</Body> : null}
