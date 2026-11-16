@@ -219,7 +219,7 @@ export const useStore = create<State>()(
       resetAll: () => set({ ...initial }),
     }),
     {
-      name: 'velour-store-v1',
+      name: 'rep-store-v1',
       storage: createJSONStorage(() => AsyncStorage),
       partialize: (s) => {
         const { set: _s, ...rest } = s;

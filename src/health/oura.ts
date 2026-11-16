@@ -13,7 +13,7 @@ const OURA_AUTHORIZE = 'https://cloud.ouraring.com/oauth/authorize';
 const OURA_API = 'https://api.ouraring.com/v2/usercollection';
 export const OURA_CLIENT_ID = process.env.EXPO_PUBLIC_OURA_CLIENT_ID ?? '';
 
-export const ouraRedirectUri = () => AuthSession.makeRedirectUri({ scheme: 'velour', path: 'oura' });
+export const ouraRedirectUri = () => AuthSession.makeRedirectUri({ scheme: 'rep', path: 'oura' });
 
 export async function connectOura(): Promise<OuraAuth> {
   if (!OURA_CLIENT_ID) throw new Error('Oura client ID is not set (EXPO_PUBLIC_OURA_CLIENT_ID).');

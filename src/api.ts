@@ -6,7 +6,7 @@ export class ServerNotConfigured extends Error {
   }
 }
 
-/** POST JSON to the Velour backend (holds the Claude key + Oura secret). */
+/** POST JSON to the rep. backend (holds the Claude key + Oura secret). */
 export async function serverPost<T>(path: string, body: unknown): Promise<T> {
   const { url, token } = useStore.getState().server;
   if (!url) throw new ServerNotConfigured();

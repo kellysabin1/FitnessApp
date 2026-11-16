@@ -36,7 +36,7 @@ export default function You() {
     const go = () => s.resetAll();
     if (Platform.OS === 'web') {
       // eslint-disable-next-line no-alert
-      if (confirm('Erase all Velour data on this device?')) go();
+      if (confirm('Erase all rep. data on this device?')) go();
     } else
       Alert.alert('Erase everything?', 'All workouts, weigh-ins and settings on this phone will be deleted.', [
         { text: 'Cancel', style: 'cancel' },
@@ -201,7 +201,7 @@ export default function You() {
           label="Server URL"
           value={s.server.url}
           onChangeText={(url) => s.set({ server: { ...s.server, url } })}
-          placeholder="https://velour-coach.onrender.com"
+          placeholder="https://rep-coach.onrender.com"
           autoCapitalize="none"
           autoCorrect={false}
         />
@@ -217,7 +217,7 @@ export default function You() {
 
       <Button title="Erase all data" variant="danger" style={{ marginTop: space(8) }} onPress={reset} />
       <H2 style={{ textAlign: 'center', marginTop: space(8), color: colors.textFaint, fontSize: 18 }}>
-        Velour <Italic style={{ color: colors.textFaint }}>v1</Italic>
+        rep. <Italic style={{ color: colors.textFaint }}>v1</Italic>
       </H2>
     </Screen>
   );

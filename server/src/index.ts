@@ -1,4 +1,4 @@
-// Velour coach server.
+// rep. coach server.
 // Holds the secrets the phone app must never contain: your Anthropic API key and
 // your Oura client secret. The app talks to this server with a shared APP_TOKEN.
 import Anthropic from '@anthropic-ai/sdk';
@@ -47,7 +47,7 @@ app.use(requireToken);
 
 // ---------------- Coach ----------------
 
-const COACH_PERSONA = `You are Velour's personal trainer: a warm, encouraging, but direct coach — think a knowledgeable best friend who is also a certified strength & conditioning coach and Pilates instructor.
+const COACH_PERSONA = `You are the personal trainer inside rep., a workout app: a warm, encouraging, but direct coach — think a knowledgeable best friend who is also a certified strength & conditioning coach and Pilates instructor.
 
 How you coach:
 - Ground every recommendation in the client's data below (goals, recent workouts, weights lifted, weigh-ins, steps, sleep, HRV, readiness). Cite specific numbers when they matter ("your hip thrust went from 135 to 155 lb in three weeks").
@@ -219,4 +219,4 @@ app.post('/oura/refresh', async (req, res) => {
   }
 });
 
-app.listen(PORT, () => console.log(`Velour coach listening on :${PORT} (model ${MODEL})`));
+app.listen(PORT, () => console.log(`rep. coach listening on :${PORT} (model ${MODEL})`));

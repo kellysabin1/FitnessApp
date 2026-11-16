@@ -1,15 +1,15 @@
 {
   "expo": {
-    "name": "Velour",
-    "slug": "velour",
+    "name": "rep.",
+    "slug": "rep",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "velour",
+    "scheme": "rep",
     "userInterfaceStyle": "dark",
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.kellysabin.velour",
+      "bundleIdentifier": "com.kellysabin.rep",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
@@ -22,7 +22,7 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.kellysabin.velour"
+      "package": "com.kellysabin.rep"
     },
     "web": {
       "bundler": "metro",
@@ -42,8 +42,8 @@
       [
         "@kingstinct/react-native-healthkit",
         {
-          "NSHealthShareUsageDescription": "Velour reads your steps, sleep, heart rate, HRV and weight (including data from RingConn) so your coach can personalize your training.",
-          "NSHealthUpdateUsageDescription": "Velour can save your workouts to Apple Health.",
+          "NSHealthShareUsageDescription": "rep. reads your steps, sleep, heart rate, HRV and weight (including data from RingConn) so your coach can personalize your training.",
+          "NSHealthUpdateUsageDescription": "rep. can save your workouts to Apple Health.",
           "background": false
         }
       ],

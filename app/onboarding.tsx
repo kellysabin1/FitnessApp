@@ -70,8 +70,11 @@ export default function Onboarding() {
 
         {step === 0 && (
           <View style={{ gap: space(5) }}>
-            <Heart size={34} />
-            <Eyebrow>Welcome to Velour</Eyebrow>
+            <Row gap={3}>
+              <Heart size={26} />
+              <Text style={{ fontFamily: fonts.display, fontSize: 30, color: colors.cream, letterSpacing: 0.5 }}>rep.</Text>
+            </Row>
+            <Eyebrow>Welcome</Eyebrow>
             <Display>
               Your strongest era <Italic>starts here.</Italic>
             </Display>
@@ -164,7 +167,7 @@ export default function Onboarding() {
 
         <View style={{ marginTop: space(10), gap: space(3) }}>
           <Button
-            title={step === STEPS - 1 ? 'Enter Velour' : 'Continue'}
+            title={step === STEPS - 1 ? 'Enter rep.' : 'Continue'}
             disabled={!canNext}
             onPress={() => (step === STEPS - 1 ? finish() : setStep(step + 1))}
           />

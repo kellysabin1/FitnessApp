@@ -1,4 +1,4 @@
-# Velour
+# rep.
 
 A moody workout tracker in bone, espresso, burnt olive and oxide with a built-in AI personal trainer.
 
@@ -69,7 +69,7 @@ Apple Health and Oura sign-in don't work in Expo Go or the browser preview. You 
 
 ### 4. (Optional) Connect Oura
 
-1. Create an app at cloud.ouraring.com → *API Applications*. Redirect URI: `velour://oura`.
+1. Create an app at cloud.ouraring.com → *API Applications*. Redirect URI: `rep://oura`.
 2. Put the client ID and secret in `server/.env` (`OURA_CLIENT_ID`, `OURA_CLIENT_SECRET`).
 3. Create `.env` in the project root with `EXPO_PUBLIC_OURA_CLIENT_ID=<same client id>` and rebuild the app.
 4. In the app: **You → Oura → Connect**.

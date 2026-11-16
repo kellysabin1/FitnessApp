@@ -1,4 +1,4 @@
-// Velour design tokens — chocolate, cocoa, espresso, latte.
+// rep. design tokens — chocolate, cocoa, espresso, latte.
 // Inspired by: giraffe & croc textures, cocoa cabana stripes, a tiny latte line-heart.
 export const colors = {
   bg: '#1E1714', // deep espresso
