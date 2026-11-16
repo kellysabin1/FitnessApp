@@ -9,7 +9,25 @@ services:
     startCommand: npm start
     healthCheckPath: /health
     envVars:
+      - key: NODE_VERSION
+        value: "22"
       - key: ANTHROPIC_API_KEY
         sync: false # Render asks you to paste this during setup
       - key: APP_TOKEN
         generateValue: true # Render makes a random password; copy it into the app
+
+  # The rep. web app — open on your iPhone in Safari, then Share → Add to Home Screen.
+  - type: web
+    name: rep-app
+    runtime: static
+    buildCommand: npm ci && npx expo export --platform web
+    staticPublishPath: ./dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: EXPO_NO_TELEMETRY
+        value: "1"
