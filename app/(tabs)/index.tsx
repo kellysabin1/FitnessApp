@@ -4,7 +4,7 @@ import { RefreshControl, ScrollView, Text, useWindowDimensions, View } from 'rea
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Bars, Ring } from '@/src/components/charts';
-import { Body, Button, Card, Display, Eyebrow, H2, Icon, Italic, Row, SectionHeader, Stat } from '@/src/components/ui';
+import { Body, Button, Card, Display, Eyebrow, H2, Heart, Icon, Italic, Row, SectionHeader, Stat } from '@/src/components/ui';
 import { syncHealth } from '@/src/health/sync';
 import { lastNDates, relativeDay, setsDone, weekStreak, workoutDurationMin, workoutsThisWeek, latestBody } from '@/src/stats';
 import { healthForDate, todayKey, useStore } from '@/src/store';
@@ -49,24 +49,27 @@ export default function Today() {
     <LinearGradient colors={gradients.screen} style={{ flex: 1 }}>
       <ScrollView
         contentContainerStyle={{ paddingTop: insets.top + space(4), paddingHorizontal: space(5), paddingBottom: insets.bottom + space(28) }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={colors.gold} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={colors.latte} />}
         showsVerticalScrollIndicator={false}
       >
-        <Eyebrow>{new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}</Eyebrow>
+        <Row gap={2}>
+          <Heart size={14} />
+          <Eyebrow>{new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}</Eyebrow>
+        </Row>
         <Display style={{ marginTop: space(2) }}>
           {greeting},{'\n'}
           <Italic>{s.profile.name || 'gorgeous'}.</Italic>
         </Display>
 
         {/* Hero: steps ring + readiness */}
-        <Card tone="plum" style={{ marginTop: space(6) }}>
+        <Card tone="croc" style={{ marginTop: space(6) }}>
           <Row gap={5}>
-            <Ring size={128} stroke={11} progress={steps / stepGoal} color={colors.goldSoft} track="rgba(255,255,255,0.1)">
+            <Ring size={128} stroke={11} progress={steps / stepGoal} color={colors.latte} track="rgba(255,255,255,0.1)">
               <Text style={{ fontFamily: fonts.display, fontSize: 30, color: colors.cream }}>{steps ? steps.toLocaleString() : '—'}</Text>
               <Text style={{ fontFamily: fonts.body, fontSize: 11, color: colors.textMuted }}>of {stepGoal.toLocaleString()}</Text>
             </Ring>
             <View style={{ flex: 1, gap: space(3) }}>
-              <Eyebrow color={colors.blush}>Today</Eyebrow>
+              <Eyebrow color={colors.sand}>Today</Eyebrow>
               <Row gap={4}>
                 <Stat label="Sleep" value={today.sleepHours != null ? String(today.sleepHours) : '—'} unit="h" />
                 <Stat label="Readiness" value={today.readiness != null ? String(today.readiness) : '—'} />
@@ -92,8 +95,8 @@ export default function Today() {
         {/* Workout CTA */}
         <SectionHeader title="Train" action="History" onAction={() => router.push('/train')} />
         {active ? (
-          <Card tone="green" onPress={() => router.push(`/workout/${active.id}`)}>
-            <Eyebrow color={colors.goldSoft}>In progress</Eyebrow>
+          <Card tone="tortoise" onPress={() => router.push(`/workout/${active.id}`)}>
+            <Eyebrow color={colors.latte}>In progress</Eyebrow>
             <H2 style={{ marginTop: space(1) }}>{active.title}</H2>
             <Body muted>
               {active.exercises.length} exercises · {setsDone(active)} sets done · tap to continue
@@ -109,7 +112,7 @@ export default function Today() {
                   {streak > 1 ? ` · ${streak}-week streak` : ''}
                 </Body>
               </View>
-              <Ring size={54} stroke={5} progress={weekCount / s.profile.daysPerWeek} color={colors.blush}>
+              <Ring size={54} stroke={5} progress={weekCount / s.profile.daysPerWeek} color={colors.sand}>
                 <Text style={{ fontFamily: fonts.bodyBold, color: colors.cream, fontSize: 13 }}>{weekCount}</Text>
               </Ring>
             </Row>
@@ -124,10 +127,10 @@ export default function Today() {
 
         {/* Coach focus */}
         <SectionHeader title="Coach’s note" action={s.plan ? 'Open' : undefined} onAction={() => router.push('/coach')} />
-        <Card tone="mocha" onPress={() => router.push('/coach')}>
+        <Card tone="stripe" onPress={() => router.push('/coach')}>
           <Row gap={2}>
-            <Icon name="sparkles" size={16} color={colors.goldSoft} />
-            <Eyebrow color={colors.goldSoft}>Your AI trainer</Eyebrow>
+            <Icon name="sparkles" size={16} color={colors.latte} />
+            <Eyebrow color={colors.latte}>Your AI trainer</Eyebrow>
           </Row>
           {s.plan ? (
             <>

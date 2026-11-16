@@ -18,7 +18,7 @@ SplashScreen.preventAutoHideAsync();
 
 const theme = {
   ...DarkTheme,
-  colors: { ...DarkTheme.colors, background: colors.bg, card: colors.bg, text: colors.cream, primary: colors.gold, border: colors.line },
+  colors: { ...DarkTheme.colors, background: colors.bg, card: colors.bg, text: colors.cream, primary: colors.latte, border: colors.line },
 };
 
 export default function RootLayout() {

@@ -86,18 +86,18 @@ export default function Progress() {
         <Body muted style={{ fontSize: 13, marginBottom: space(3) }}>
           Workouts per week · goal {s.profile.daysPerWeek}
         </Body>
-        <Bars data={weeks} width={chartW} goal={s.profile.daysPerWeek} color={colors.plum} highlight={colors.blush} />
+        <Bars data={weeks} width={chartW} goal={s.profile.daysPerWeek} color={colors.burgundy} highlight={colors.olive} />
       </Card>
 
       <SectionHeader title="Recovery" />
       {hasRecovery ? (
         <Card>
           <Body muted style={{ fontSize: 13, marginBottom: space(3) }}>Sleep, last 14 nights (h)</Body>
-          <Bars data={sleep} width={chartW} goal={7.5} color={colors.green} highlight={colors.goldSoft} height={90} />
+          <Bars data={sleep} width={chartW} goal={7.5} color={colors.mocha} highlight={colors.olive} height={90} />
           {hrv.length > 1 ? (
             <>
               <Body muted style={{ fontSize: 13, marginTop: space(6), marginBottom: space(3) }}>HRV trend (ms)</Body>
-              <LineChart data={hrv} width={chartW} height={100} color={colors.goldSoft} />
+              <LineChart data={hrv} width={chartW} height={100} color={colors.latte} />
             </>
           ) : null}
         </Card>

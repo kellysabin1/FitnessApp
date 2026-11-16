@@ -8,7 +8,7 @@ export function Ring({
   size = 120,
   stroke = 10,
   progress,
-  color = colors.gold,
+  color = colors.latte,
   track = 'rgba(243,235,221,0.08)',
   children,
 }: {
@@ -49,7 +49,7 @@ export function LineChart({
   data,
   width,
   height = 140,
-  color = colors.blush,
+  color = colors.sand,
   goal,
   formatY,
 }: {
@@ -93,7 +93,7 @@ export function LineChart({
           </LinearGradient>
         </Defs>
         {goal != null ? (
-          <Path d={`M ${pad} ${y(goal)} L ${width - pad} ${y(goal)}`} stroke={colors.gold} strokeDasharray="4 6" strokeWidth={1} opacity={0.7} />
+          <Path d={`M ${pad} ${y(goal)} L ${width - pad} ${y(goal)}`} stroke={colors.latte} strokeDasharray="4 6" strokeWidth={1} opacity={0.7} />
         ) : null}
         <Path d={area} fill="url(#fill)" />
         <Path d={line} stroke={color} strokeWidth={2.5} fill="none" strokeLinecap="round" />
@@ -115,7 +115,7 @@ export function Bars({
   height = 110,
   goal,
   color = colors.mocha,
-  highlight = colors.gold,
+  highlight = colors.olive,
 }: {
   data: { label: string; value: number }[];
   width: number;
@@ -131,7 +131,7 @@ export function Bars({
     <View>
       <Svg width={width} height={height}>
         {goal ? (
-          <Path d={`M 0 ${height - (goal / max) * height} L ${width} ${height - (goal / max) * height}`} stroke={colors.gold} strokeDasharray="3 5" opacity={0.6} />
+          <Path d={`M 0 ${height - (goal / max) * height} L ${width} ${height - (goal / max) * height}`} stroke={colors.latte} strokeDasharray="3 5" opacity={0.6} />
         ) : null}
         {data.map((d, i) => {
           const h = Math.max(3, (d.value / max) * (height - 4));

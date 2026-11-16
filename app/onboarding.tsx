@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, Text, View } from 'react-native';
-import { Body, Button, Chip, Display, Eyebrow, Field, Italic, Row, Screen } from '@/src/components/ui';
+import { Body, Button, Chip, Display, Eyebrow, Field, Heart, Italic, Row, Screen } from '@/src/components/ui';
 import { Experience, Goal, GOAL_LABEL, todayKey, useStore } from '@/src/store';
 import { colors, fonts, space } from '@/src/theme';
 import { Units, ftInToCm, inputToKg, weightLabel } from '@/src/units';
@@ -63,13 +63,14 @@ export default function Onboarding() {
           {Array.from({ length: STEPS }).map((_, i) => (
             <View
               key={i}
-              style={{ flex: 1, height: 3, borderRadius: 2, backgroundColor: i <= step ? colors.gold : colors.line }}
+              style={{ flex: 1, height: 3, borderRadius: 2, backgroundColor: i <= step ? colors.latte : colors.line }}
             />
           ))}
         </Row>
 
         {step === 0 && (
           <View style={{ gap: space(5) }}>
+            <Heart size={34} />
             <Eyebrow>Welcome to Velour</Eyebrow>
             <Display>
               Your strongest era <Italic>starts here.</Italic>
@@ -135,7 +136,7 @@ export default function Onboarding() {
             <Text style={label}>Days per week</Text>
             <Row gap={2}>
               {[2, 3, 4, 5, 6].map((d) => (
-                <Pressable key={d} onPress={() => setDays(d)} style={[dayDot, days === d && { backgroundColor: colors.plum, borderColor: colors.blush }]}>
+                <Pressable key={d} onPress={() => setDays(d)} style={[dayDot, days === d && { backgroundColor: colors.burgundy, borderColor: 'rgba(216,193,166,0.45)' }]}>
                   <Text style={{ color: colors.cream, fontFamily: fonts.bodyMedium }}>{d}</Text>
                 </Pressable>
               ))}

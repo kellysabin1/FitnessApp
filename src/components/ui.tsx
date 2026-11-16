@@ -2,8 +2,10 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
+import Svg, { Defs, Pattern, Rect } from 'react-native-svg';
 import {
   ActivityIndicator,
+  ImageBackground,
   Platform,
   Pressable,
   ScrollView,
@@ -64,7 +66,7 @@ export const Row = ({ children, style, gap = 3 }: { children: React.ReactNode; s
 );
 
 // ---------- Type ----------
-export const Eyebrow = ({ children, color = colors.gold, style }: { children: React.ReactNode; color?: string; style?: StyleProp<TextStyle> }) => (
+export const Eyebrow = ({ children, color = colors.latte, style }: { children: React.ReactNode; color?: string; style?: StyleProp<TextStyle> }) => (
   <Text style={[styles.eyebrow, { color }, style]}>{children}</Text>
 );
 export const Display = ({ children, style }: { children: React.ReactNode; style?: StyleProp<TextStyle> }) => (
@@ -89,11 +91,19 @@ export const Body = ({
   </Text>
 );
 export const Italic = ({ children, style }: { children: React.ReactNode; style?: StyleProp<TextStyle> }) => (
-  <Text style={[{ fontFamily: fonts.displayItalic, color: colors.goldSoft }, style]}>{children}</Text>
+  <Text style={[{ fontFamily: fonts.displayItalic, color: colors.latte }, style]}>{children}</Text>
 );
 
 // ---------- Surfaces ----------
-type Tone = 'default' | 'plum' | 'green' | 'mocha' | 'gold';
+// Tones: plain card, cocoa/mocha gradients, croc leather texture, cocoa cabana stripes.
+export type Tone = 'default' | 'cocoa' | 'mocha' | 'croc' | 'tortoise' | 'satin' | 'stripe';
+// Swap these files to change the textures — any image works.
+const TEXTURES = {
+  croc: require('../../assets/textures/croc.jpg'),
+  tortoise: require('../../assets/textures/tortoise.jpg'),
+  satin: require('../../assets/textures/satin.jpg'),
+};
+
 export function Card({
   children,
   tone = 'default',
@@ -105,26 +115,69 @@ export function Card({
   style?: StyleProp<ViewStyle>;
   onPress?: () => void;
 }) {
-  const inner =
-    tone === 'default' ? (
-      <View style={[styles.card, style]}>{children}</View>
-    ) : (
+  let inner: React.ReactNode;
+  if (tone === 'croc' || tone === 'tortoise' || tone === 'satin') {
+    inner = (
+      <ImageBackground source={TEXTURES[tone]} resizeMode="cover" style={[styles.card, styles.textured, style]}>
+        <LinearGradient
+          colors={tone === 'croc' ? ['rgba(20,13,11,0.35)', 'rgba(20,13,11,0.7)'] : ['rgba(20,13,11,0.45)', 'rgba(20,13,11,0.78)']}
+          style={StyleSheet.absoluteFill}
+        />
+        {children}
+      </ImageBackground>
+    );
+  } else if (tone === 'stripe') {
+    inner = (
+      <View style={[styles.card, styles.textured, { backgroundColor: colors.cocoaDeep }, style]}>
+        <Stripes />
+        <LinearGradient colors={['rgba(29,21,19,0.25)', 'rgba(29,21,19,0.75)']} style={StyleSheet.absoluteFill} />
+        {children}
+      </View>
+    );
+  } else if (tone === 'default') {
+    inner = <View style={[styles.card, style]}>{children}</View>;
+  } else {
+    inner = (
       <LinearGradient
         colors={gradients[tone]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
-        style={[styles.card, { borderColor: 'rgba(255,255,255,0.08)' }, style]}
+        style={[styles.card, styles.textured, style]}
       >
         {children}
       </LinearGradient>
     );
+  }
   if (!onPress) return inner;
   return (
-    <Pressable onPress={() => { tap(); onPress(); }} style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1, transform: [{ scale: pressed ? 0.99 : 1 }] })}>
+    <Pressable
+      onPress={() => { tap(); onPress(); }}
+      style={({ pressed }) => ({ flexDirection: 'column', opacity: pressed ? 0.88 : 1, transform: [{ scale: pressed ? 0.99 : 1 }] })}
+    >
       {inner}
     </Pressable>
   );
 }
+
+/** Cocoa cabana stripes, drawn as SVG so they stay crisp at any size. */
+function Stripes() {
+  return (
+    <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
+      <Defs>
+        <Pattern id="cabana" patternUnits="userSpaceOnUse" width={28} height={10}>
+          <Rect x={0} y={0} width={14} height={10} fill={colors.cocoa} />
+          <Rect x={14} y={0} width={14} height={10} fill={colors.cocoaDeep} />
+        </Pattern>
+      </Defs>
+      <Rect x={0} y={0} width="100%" height="100%" fill="url(#cabana)" />
+    </Svg>
+  );
+}
+
+/** The thin latte line-heart brand mark. */
+export const Heart = ({ size = 18, color = colors.latte }: { size?: number; color?: string }) => (
+  <Ionicons name="heart-outline" size={size} color={color} />
+);
 
 export function SectionHeader({ title, action, onAction }: { title: string; action?: string; onAction?: () => void }) {
   return (
@@ -174,7 +227,7 @@ export function Button({
       style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }, style]}
     >
       {variant === 'primary' ? (
-        <LinearGradient colors={gradients.gold} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={base}>
+        <LinearGradient colors={gradients.latte} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={base}>
           {content}
         </LinearGradient>
       ) : (
@@ -197,7 +250,7 @@ export function Chip({ label, active, onPress, icon }: { label: string; active?:
   return (
     <Pressable
       onPress={() => { tap(); onPress?.(); }}
-      style={[styles.chip, active && { backgroundColor: colors.plum, borderColor: colors.blush }]}
+      style={[styles.chip, active && { backgroundColor: colors.burgundy, borderColor: 'rgba(216,193,166,0.45)' }]}
     >
       <Row gap={1.5}>
         {icon ? <Icon name={icon} size={14} color={active ? colors.cream : colors.textMuted} /> : null}
@@ -243,7 +296,7 @@ export function Empty({ icon, title, text, children }: { icon: IconName; title: 
   return (
     <Card style={{ alignItems: 'center', paddingVertical: space(8), gap: space(2) }}>
       <View style={styles.emptyIcon}>
-        <Icon name={icon} size={22} color={colors.goldSoft} />
+        <Icon name={icon} size={22} color={colors.latte} />
       </View>
       <H2 style={{ textAlign: 'center' }}>{title}</H2>
       <Body muted style={{ textAlign: 'center', maxWidth: 280 }}>{text}</Body>
@@ -256,11 +309,12 @@ export const Divider = () => <View style={{ height: StyleSheet.hairlineWidth, ba
 
 const styles = StyleSheet.create({
   content: { paddingHorizontal: space(5) },
-  eyebrow: { fontFamily: fonts.bodyMedium, fontSize: 11, letterSpacing: 2.2, textTransform: 'uppercase' },
+  eyebrow: { fontFamily: fonts.display, fontSize: 13, letterSpacing: 3.6, textTransform: 'uppercase' },
   display: { fontFamily: fonts.display, fontSize: 40, lineHeight: 44, color: colors.cream, letterSpacing: -0.5 },
   h2: { fontFamily: fonts.display, fontSize: 24, color: colors.cream },
   body: { fontFamily: fonts.body, fontSize: 15, lineHeight: 22, color: colors.text },
-  link: { fontFamily: fonts.bodyMedium, fontSize: 13, color: colors.goldSoft },
+  link: { fontFamily: fonts.bodyMedium, fontSize: 13, color: colors.latte },
+  textured: { borderColor: 'rgba(232,214,194,0.10)' },
   card: {
     backgroundColor: colors.card,
     borderRadius: radius.lg,
@@ -291,7 +345,7 @@ const styles = StyleSheet.create({
     borderColor: colors.line,
     paddingHorizontal: space(4),
   },
-  input: { flex: 1, height: 50, color: colors.cream, fontFamily: fonts.body, fontSize: 16 },
+  input: { flex: 1, minWidth: 0, height: 50, color: colors.cream, fontFamily: fonts.body, fontSize: 16, outlineStyle: 'none' as never },
   suffix: { fontFamily: fonts.body, color: colors.textMuted, marginLeft: space(2) },
   statValue: { fontFamily: fonts.display, fontSize: 30, color: colors.cream },
   statUnit: { fontFamily: fonts.body, fontSize: 13, color: colors.textMuted },
@@ -299,7 +353,7 @@ const styles = StyleSheet.create({
     width: 52,
     height: 52,
     borderRadius: 26,
-    backgroundColor: colors.plumDeep,
+    backgroundColor: colors.cocoaDeep,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: space(1),

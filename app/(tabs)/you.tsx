@@ -56,7 +56,7 @@ export default function You() {
       <Card style={{ gap: space(1) }}>
         <Connection
           icon="heart"
-          tint={colors.blush}
+          tint={colors.sand}
           title="Apple Health"
           sub={
             appleHealthSupported
@@ -91,7 +91,7 @@ export default function You() {
         <Divider />
         <Connection
           icon="radio-button-on"
-          tint={colors.goldSoft}
+          tint={colors.latte}
           title="RingConn"
           sub="Syncs through Apple Health. In the RingConn app: Me → Apple Health → turn on all categories."
         />
@@ -137,7 +137,7 @@ export default function You() {
             }
           />
         )}
-        {msg ? <Body style={{ marginTop: space(3), fontSize: 13, color: colors.goldSoft }}>{msg}</Body> : null}
+        {msg ? <Body style={{ marginTop: space(3), fontSize: 13, color: colors.latte }}>{msg}</Body> : null}
       </Card>
 
       {/* Profile */}
@@ -258,7 +258,7 @@ function NumField({ label, suffix, value, onCommit }: { label: string; suffix?: 
 
 const styles = {
   label: { fontFamily: fonts.bodyMedium, fontSize: 12, color: colors.textMuted, letterSpacing: 0.4 },
-  on: { fontFamily: fonts.bodyBold, color: colors.goldSoft, fontSize: 13 },
+  on: { fontFamily: fonts.bodyBold, color: colors.latte, fontSize: 13 },
   connIcon: {
     width: 40,
     height: 40,

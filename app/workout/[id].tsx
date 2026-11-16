@@ -101,14 +101,14 @@ export default function WorkoutScreen() {
         )}
 
         {finishing && (
-          <Card tone="plum" style={{ marginTop: space(6), gap: space(4) }}>
+          <Card tone="tortoise" style={{ marginTop: space(6), gap: space(4) }}>
             <Text style={styles.cardTitle}>How did that feel?</Text>
             <Row gap={2} style={{ justifyContent: 'space-between' }}>
               {[1, 2, 3, 4, 5].map((m) => (
                 <Pressable
                   key={m}
                   onPress={() => { tap(); setMood(m); }}
-                  style={[styles.mood, mood === m && { backgroundColor: colors.gold, borderColor: colors.gold }]}
+                  style={[styles.mood, mood === m && { backgroundColor: colors.latte, borderColor: colors.latte }]}
                 >
                   <Text style={{ fontFamily: fonts.bodyBold, color: mood === m ? colors.bg : colors.cream }}>{m}</Text>
                 </Pressable>
@@ -165,16 +165,16 @@ function ExerciseCard({
       </Row>
 
       {ex.sets.map((set, i) => (
-        <Row key={i} gap={2} style={[styles.setRow, set.done && { backgroundColor: 'rgba(62,92,74,0.35)' }]}>
+        <Row key={i} gap={2} style={[styles.setRow, set.done && { backgroundColor: 'rgba(95,99,64,0.28)' }]}>
           <Text style={[styles.setNum, { width: 28 }]}>{i + 1}</Text>
           {cols.map((c) => (
             <NumInput key={c.key} value={c.get(set)} onCommit={(v) => setSet(i, c.set(v))} placeholder="—" />
           ))}
           <Pressable
             onPress={() => { tap(); setSet(i, { done: !set.done }); }}
-            style={[styles.check, set.done && { backgroundColor: colors.gold, borderColor: colors.gold }]}
+            style={[styles.check, set.done && { backgroundColor: colors.olive, borderColor: colors.olive }]}
           >
-            <Icon name="checkmark" size={16} color={set.done ? colors.bg : colors.textFaint} />
+            <Icon name="checkmark" size={16} color={set.done ? colors.cream : colors.textFaint} />
           </Pressable>
         </Row>
       ))}
@@ -278,7 +278,7 @@ function useElapsed(start?: string, end?: string) {
 }
 
 const styles = StyleSheet.create({
-  title: { fontFamily: fonts.display, fontSize: 34, color: colors.cream, marginTop: space(1), padding: 0 },
+  title: { fontFamily: fonts.display, fontSize: 34, color: colors.cream, marginTop: space(1), padding: 0, outlineStyle: 'none' as never },
   cardTitle: { fontFamily: fonts.display, fontSize: 22, color: colors.cream },
   meta: { fontFamily: fonts.body, fontSize: 12, color: colors.textFaint, marginTop: 2 },
   colHead: { fontFamily: fonts.bodyMedium, fontSize: 10, letterSpacing: 1.2, color: colors.textFaint, textAlign: 'center' },
@@ -286,7 +286,10 @@ const styles = StyleSheet.create({
   setNum: { fontFamily: fonts.bodyBold, color: colors.textMuted, textAlign: 'center' },
   num: {
     flex: 1,
+    flexBasis: 0,
+    minWidth: 0,
     height: 40,
+    outlineStyle: 'none' as never,
     textAlign: 'center',
     color: colors.cream,
     fontFamily: fonts.bodyMedium,
@@ -304,7 +307,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   smallBtn: { paddingVertical: space(2), paddingHorizontal: space(1) },
-  smallBtnText: { fontFamily: fonts.bodyMedium, fontSize: 13, color: colors.goldSoft },
+  smallBtnText: { fontFamily: fonts.bodyMedium, fontSize: 13, color: colors.latte },
   notes: {
     marginTop: space(5),
     minHeight: 80,
@@ -317,6 +320,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.line,
     textAlignVertical: 'top',
+    outlineStyle: 'none' as never,
   },
   mood: {
     width: 48,

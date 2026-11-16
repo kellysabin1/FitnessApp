@@ -91,8 +91,8 @@ function Item({ name, sub, selected, onPress }: { name: string; sub: string; sel
             height: 26,
             borderRadius: 13,
             borderWidth: 1,
-            borderColor: selected ? colors.gold : colors.line,
-            backgroundColor: selected ? colors.gold : 'transparent',
+            borderColor: selected ? colors.latte : colors.line,
+            backgroundColor: selected ? colors.latte : 'transparent',
             alignItems: 'center',
             justifyContent: 'center',
           }}

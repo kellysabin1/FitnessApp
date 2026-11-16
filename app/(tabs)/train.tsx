@@ -8,13 +8,13 @@ import { addExercisesByName } from '@/src/workoutActions';
 import { displayWeight, weightLabel } from '@/src/units';
 
 // Quick-start templates covering strength, pilates, mobility and cardio.
-const TEMPLATES: { title: string; tone: 'plum' | 'green' | 'mocha'; exercises: string[] }[] = [
-  { title: 'Glutes & hamstrings', tone: 'plum', exercises: ['Hip Thrust', 'Romanian Deadlift', 'Bulgarian Split Squat', 'Cable Kickback', 'Hip Abduction Machine'] },
-  { title: 'Upper body sculpt', tone: 'mocha', exercises: ['Lat Pulldown', 'Dumbbell Bench Press', 'Seated Cable Row', 'Lateral Raise', 'Bicep Curl', 'Tricep Rope Pushdown'] },
-  { title: 'Quads & core', tone: 'green', exercises: ['Goblet Squat', 'Leg Press', 'Walking Lunge', 'Leg Extension', 'Dead Bug', 'Plank'] },
-  { title: 'Mat Pilates', tone: 'plum', exercises: ['The Hundred', 'Roll Up', 'Single Leg Stretch', 'Criss Cross', 'Side-Lying Leg Series', 'Swan'] },
-  { title: 'Mobility reset', tone: 'green', exercises: ['Cat-Cow', 'World’s Greatest Stretch', '90/90 Hip Switch', 'Pigeon Pose', 'Thoracic Rotation'] },
-  { title: 'Zone 2 + walk', tone: 'mocha', exercises: ['Incline Walk', 'Zone 2 Cycling'] },
+const TEMPLATES: { title: string; tone: 'croc' | 'tortoise' | 'satin' | 'stripe' | 'cocoa' | 'mocha'; exercises: string[] }[] = [
+  { title: 'Glutes & hamstrings', tone: 'croc', exercises: ['Hip Thrust', 'Romanian Deadlift', 'Bulgarian Split Squat', 'Cable Kickback', 'Hip Abduction Machine'] },
+  { title: 'Upper body sculpt', tone: 'stripe', exercises: ['Lat Pulldown', 'Dumbbell Bench Press', 'Seated Cable Row', 'Lateral Raise', 'Bicep Curl', 'Tricep Rope Pushdown'] },
+  { title: 'Quads & core', tone: 'mocha', exercises: ['Goblet Squat', 'Leg Press', 'Walking Lunge', 'Leg Extension', 'Dead Bug', 'Plank'] },
+  { title: 'Mat Pilates', tone: 'tortoise', exercises: ['The Hundred', 'Roll Up', 'Single Leg Stretch', 'Criss Cross', 'Side-Lying Leg Series', 'Swan'] },
+  { title: 'Mobility reset', tone: 'satin', exercises: ['Cat-Cow', 'World’s Greatest Stretch', '90/90 Hip Switch', 'Pigeon Pose', 'Thoracic Rotation'] },
+  { title: 'Zone 2 + walk', tone: 'stripe', exercises: ['Incline Walk', 'Zone 2 Cycling'] },
 ];
 
 export default function Train() {
@@ -44,9 +44,9 @@ export default function Train() {
       />
 
       <SectionHeader title="Quick start" />
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space(3) }}>
+      <View style={{ gap: space(3) }}>
         {TEMPLATES.map((t) => (
-          <Card key={t.title} tone={t.tone} style={{ width: '100%' }} onPress={() => startFromTemplate(t)}>
+          <Card key={t.title} tone={t.tone} onPress={() => startFromTemplate(t)}>
             <H2 style={{ fontSize: 21 }}>{t.title}</H2>
             <Body muted numberOfLines={1} style={{ fontSize: 13 }}>{t.exercises.join(' · ')}</Body>
           </Card>
@@ -65,7 +65,7 @@ export default function Train() {
                     {displayWeight(pr.weightKg, s.units)} {wl} × {pr.reps} · {relativeDay(pr.date)}
                   </Text>
                 </View>
-                <Text style={{ fontFamily: fonts.display, color: colors.goldSoft, fontSize: 22 }}>
+                <Text style={{ fontFamily: fonts.display, color: colors.brass, fontSize: 22 }}>
                   {displayWeight(pr.e1rm, s.units, 0)}
                   <Text style={{ fontSize: 12, fontFamily: fonts.body, color: colors.textMuted }}> {wl} 1RM</Text>
                 </Text>
@@ -96,7 +96,7 @@ function HistoryCard({ w }: { w: Workout }) {
     <Card onPress={() => router.push(`/workout/${w.id}`)}>
       <Row style={{ justifyContent: 'space-between' }}>
         <Eyebrow color={colors.textMuted}>{relativeDay(w.startedAt)}</Eyebrow>
-        {w.mood ? <Text style={{ color: colors.goldSoft }}>{'✦'.repeat(w.mood)}</Text> : null}
+        {w.mood ? <Text style={{ color: colors.latte }}>{'✦'.repeat(w.mood)}</Text> : null}
       </Row>
       <H2 style={{ marginTop: space(1) }}>{w.title}</H2>
       <Body muted style={{ fontSize: 13 }}>

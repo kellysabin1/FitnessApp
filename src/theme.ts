@@ -1,36 +1,41 @@
-// Velour design tokens — espresso, mocha, plum, deep green, gold, cream.
+// Velour design tokens — chocolate, cocoa, espresso, latte.
+// Inspired by: giraffe & croc textures, cocoa cabana stripes, a tiny latte line-heart.
 export const colors = {
-  bg: '#17110E', // espresso, near-black
-  bgRaised: '#211915',
-  card: '#2A201B',
-  cardSoft: '#33271F',
-  line: 'rgba(243, 235, 221, 0.09)',
+  bg: '#1E1714', // deep espresso
+  bgRaised: '#251C18',
+  card: '#2B211C', // Espresso #2B211C
+  cardSoft: '#342822',
+  line: 'rgba(232, 214, 194, 0.09)',
 
-  mocha: '#8B6B58',
-  mochaDeep: '#5C4334',
-  plum: '#6B3A55',
-  plumDeep: '#3E2232',
-  green: '#3E5C4A',
-  greenDeep: '#24382C',
-  gold: '#C9A45C',
-  goldSoft: '#E2C98F',
-  blush: '#D9A7A0',
+  cocoa: '#4A3329', // light stripe
+  cocoaDeep: '#2C1F1A', // dark stripe
+  mocha: '#5C3A27', // walnut
+  mochaDeep: '#3D271B',
+  umber: '#3A2A22',
 
-  cream: '#F3EBDD',
-  white: '#FFFFFF',
-  text: '#F3EBDD',
-  textMuted: 'rgba(243, 235, 221, 0.62)',
-  textFaint: 'rgba(243, 235, 221, 0.38)',
+  burgundy: '#633A38', // Oxide — secondary accent
+  burgundyDeep: '#3A2120',
+  olive: '#6B6947', // Burnt Olive — 'done' moments
+  taupe: '#A99B88', // taupe stone
+  brass: '#A58A61', // Muted Brass — tiny details only (PRs)
 
-  danger: '#C46A5E',
+  latte: '#E8E0D2', // Bone — primary accent (heart, buttons, rings)
+  latteDeep: '#CFC5B4',
+  sand: '#A99B88', // taupe
+
+  cream: '#E8E0D2',
+  text: '#E8E0D2',
+  textMuted: 'rgba(232, 224, 210, 0.62)',
+  textFaint: 'rgba(232, 224, 210, 0.36)',
+
+  danger: '#B97563',
 };
 
 export const gradients = {
-  screen: ['#1E1612', '#17110E', '#140E0C'] as const,
-  plum: ['#6B3A55', '#3E2232'] as const,
-  mocha: ['#8B6B58', '#4A362A'] as const,
-  green: ['#3E5C4A', '#1F3127'] as const,
-  gold: ['#E2C98F', '#B38B44'] as const,
+  screen: ['#241B17', '#1E1714', '#191310'] as const,
+  cocoa: ['#4A3329', '#2E211B'] as const,
+  mocha: ['#5C3A27', '#35221A'] as const,
+  latte: ['#EEE7DB', '#D6CCBC'] as const,
 };
 
 export const fonts = {

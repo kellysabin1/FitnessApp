@@ -73,11 +73,11 @@ export default function Coach() {
           </Display>
 
           {/* Plan */}
-          <Card tone="plum" style={{ marginTop: space(6) }}>
+          <Card tone="satin" style={{ marginTop: space(6) }}>
             <Row style={{ justifyContent: 'space-between' }}>
               <Row gap={2}>
-                <Icon name="sparkles" size={15} color={colors.goldSoft} />
-                <Eyebrow color={colors.goldSoft}>This week’s plan</Eyebrow>
+                <Icon name="sparkles" size={15} color={colors.latte} />
+                <Eyebrow color={colors.latte}>This week’s plan</Eyebrow>
               </Row>
               {plan ? (
                 <Text style={styles.small}>
@@ -98,7 +98,7 @@ export default function Coach() {
                   {plan.stepGoal !== s.profile.stepGoal ? (
                     <Button small title="Use it" variant="secondary" onPress={() => s.updateProfile({ stepGoal: plan.stepGoal })} />
                   ) : (
-                    <Text style={[styles.small, { color: colors.goldSoft }]}>Active ✓</Text>
+                    <Text style={[styles.small, { color: colors.latte }]}>Active ✓</Text>
                   )}
                 </View>
 
@@ -133,7 +133,7 @@ export default function Coach() {
             <H2>Ask anything</H2>
             {s.coach.length ? (
               <Pressable onPress={s.clearCoach} hitSlop={10}>
-                <Text style={[styles.small, { color: colors.goldSoft }]}>Clear</Text>
+                <Text style={[styles.small, { color: colors.latte }]}>Clear</Text>
               </Pressable>
             ) : null}
           </Row>
@@ -156,7 +156,7 @@ export default function Coach() {
               ))}
               {sending ? (
                 <View style={[styles.bubble, styles.assistant, { flexDirection: 'row', gap: 8, alignItems: 'center' }]}>
-                  <ActivityIndicator color={colors.goldSoft} size="small" />
+                  <ActivityIndicator color={colors.latte} size="small" />
                   <Text style={styles.small}>Thinking…</Text>
                 </View>
               ) : null}
@@ -165,7 +165,7 @@ export default function Coach() {
 
           {error ? (
             <Card style={{ marginTop: space(4), borderColor: 'rgba(196,106,94,0.4)' }}>
-              <Body style={{ color: colors.blush, fontSize: 14 }}>{error}</Body>
+              <Body style={{ color: colors.sand, fontSize: 14 }}>{error}</Body>
             </Card>
           ) : null}
         </ScrollView>
@@ -178,7 +178,7 @@ export default function Coach() {
             placeholder="Message your coach…"
             placeholderTextColor={colors.textFaint}
             style={styles.input}
-            multiline
+            multiline={Platform.OS !== 'web'}
             onSubmitEditing={() => send(text)}
             blurOnSubmit={false}
           />
@@ -204,7 +204,7 @@ const styles = StyleSheet.create({
   rec: { backgroundColor: 'rgba(0,0,0,0.18)', borderRadius: radius.md, padding: space(4), gap: space(1) },
   recTitle: { fontFamily: fonts.bodyBold, fontSize: 14, color: colors.cream },
   recWhy: { fontFamily: fonts.body, fontSize: 14, lineHeight: 20, color: colors.textMuted },
-  recEx: { fontFamily: fonts.bodyMedium, fontSize: 13, color: colors.goldSoft, marginTop: space(1) },
+  recEx: { fontFamily: fonts.bodyMedium, fontSize: 13, color: colors.latte, marginTop: space(1) },
   prompt: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -217,7 +217,7 @@ const styles = StyleSheet.create({
   },
   promptText: { fontFamily: fonts.body, fontSize: 14, color: colors.text, flex: 1, marginRight: space(2) },
   bubble: { padding: space(4), borderRadius: radius.lg, maxWidth: '88%' },
-  user: { alignSelf: 'flex-end', backgroundColor: colors.plum, borderBottomRightRadius: 6 },
+  user: { alignSelf: 'flex-end', backgroundColor: colors.burgundy, borderBottomRightRadius: 6 },
   assistant: { alignSelf: 'flex-start', backgroundColor: colors.card, borderWidth: 1, borderColor: colors.line, borderBottomLeftRadius: 6 },
   bubbleText: { fontFamily: fonts.body, fontSize: 15, lineHeight: 22, color: colors.text },
   composer: {
@@ -232,6 +232,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.line,
   },
-  input: { flex: 1, color: colors.cream, fontFamily: fonts.body, fontSize: 15, maxHeight: 120, paddingVertical: space(2.5) },
-  send: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.gold, alignItems: 'center', justifyContent: 'center' },
+  input: { flex: 1, color: colors.cream, fontFamily: fonts.body, fontSize: 15, maxHeight: 120, paddingVertical: space(2.5), outlineStyle: 'none' as never },
+  send: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.latte, alignItems: 'center', justifyContent: 'center' },
 });
