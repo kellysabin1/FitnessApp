@@ -1,0 +1,15 @@
+# One-click deploy of the rep. coach server on Render (render.com → New → Blueprint).
+services:
+  - type: web
+    name: rep-coach
+    runtime: node
+    plan: free
+    rootDir: server
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: ANTHROPIC_API_KEY
+        sync: false # Render asks you to paste this during setup
+      - key: APP_TOKEN
+        generateValue: true # Render makes a random password; copy it into the app
