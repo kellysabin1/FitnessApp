@@ -122,6 +122,8 @@ interface State {
   appleHealthEnabled: boolean;
   oura?: OuraAuth;
   server: { url: string; token: string };
+  /** Result of the last coach connection check. */
+  coachStatus?: 'ok' | 'unauthorized' | 'unreachable';
 
   // actions
   set: (patch: Partial<State>) => void;
@@ -167,6 +169,7 @@ const initial = {
   plan: undefined,
   appleHealthEnabled: false,
   oura: undefined,
+  coachStatus: undefined,
   server: {
     url: process.env.EXPO_PUBLIC_COACH_URL ?? '',
     token: process.env.EXPO_PUBLIC_COACH_TOKEN ?? '',

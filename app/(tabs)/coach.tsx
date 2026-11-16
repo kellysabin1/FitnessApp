@@ -6,6 +6,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Body, Button, Card, Display, Eyebrow, H2, Icon, Italic, Row, tap } from '@/src/components/ui';
 import { askCoach, generatePlan } from '@/src/coach';
 import { useStore } from '@/src/store';
+import { isCoachConfigured } from '@/src/api';
+import { router } from 'expo-router';
 import { colors, fonts, gradients, radius, space } from '@/src/theme';
 
 const PROMPTS = [
@@ -57,6 +59,10 @@ export default function Coach() {
   };
 
   const plan = s.plan;
+  const configured = isCoachConfigured(s.server);
+  if (!configured || s.coachStatus === 'unauthorized') {
+    return <CoachNotSetUp insetTop={insets.top} wrongPassword={configured} />;
+  }
 
   return (
     <LinearGradient colors={gradients.screen} style={{ flex: 1 }}>
@@ -187,6 +193,36 @@ export default function Coach() {
           </Pressable>
         </View>
       </KeyboardAvoidingView>
+    </LinearGradient>
+  );
+}
+
+/** Shown until a coach link + password are saved (or when the password stops working). */
+function CoachNotSetUp({ insetTop, wrongPassword }: { insetTop: number; wrongPassword: boolean }) {
+  return (
+    <LinearGradient colors={gradients.screen} style={{ flex: 1 }}>
+      <ScrollView contentContainerStyle={{ paddingTop: insetTop + space(4), paddingHorizontal: space(5), paddingBottom: space(28) }}>
+        <Eyebrow>Your coach</Eyebrow>
+        <Display style={{ marginTop: space(2) }}>
+          Trainer in <Italic>your pocket.</Italic>
+        </Display>
+        <Card tone="satin" style={{ marginTop: space(6), gap: space(3) }}>
+          <Row gap={2}>
+            <Icon name="lock-closed-outline" size={15} color={colors.latte} />
+            <Eyebrow color={colors.latte}>{wrongPassword ? 'Coach locked' : 'Coach not set up'}</Eyebrow>
+          </Row>
+          <H2>{wrongPassword ? 'That coach password isn’t working' : 'Your AI coach needs a password'}</H2>
+          <Body muted>
+            {wrongPassword
+              ? 'The coach password saved on this phone was rejected. It may have been changed — ask for the new one, then update it in You → Coach.'
+              : 'The coach is invite-only. If someone shared rep. with you, ask them for the coach link and coach password. Then add them in You → Coach.'}
+          </Body>
+          <Body muted style={{ fontSize: 13 }}>
+            Everything else — workouts, PRs, weigh-ins and goals — works without it.
+          </Body>
+          <Button title="Go to coach settings" icon="arrow-forward" style={{ marginTop: space(2) }} onPress={() => router.push('/you')} />
+        </Card>
+      </ScrollView>
     </LinearGradient>
   );
 }

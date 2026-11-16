@@ -45,6 +45,11 @@ function requireToken(req: Request, res: Response, next: NextFunction) {
 }
 app.use(requireToken);
 
+// Lets the app confirm the URL + password are right ("Save & test").
+app.get('/auth-check', (_req, res) => {
+  res.json({ ok: true });
+});
+
 // ---------------- Coach ----------------
 
 const COACH_PERSONA = `You are the personal trainer inside rep., a workout app: a warm, encouraging, but direct coach — think a knowledgeable best friend who is also a certified strength & conditioning coach and Pilates instructor.

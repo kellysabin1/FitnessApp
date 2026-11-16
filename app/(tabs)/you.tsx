@@ -4,6 +4,7 @@ import { Body, Button, Card, Chip, Display, Divider, Eyebrow, Field, H2, Icon, I
 import { appleHealthSupported, connectAppleHealth } from '@/src/health/appleHealth';
 import { connectOura, OURA_CLIENT_ID } from '@/src/health/oura';
 import { syncHealth } from '@/src/health/sync';
+import { testCoachConnection } from '@/src/api';
 import { Experience, Goal, GOAL_LABEL, useStore } from '@/src/store';
 import { colors, fonts, space } from '@/src/theme';
 import { cmToFtIn, ftInToCm, inputToKg, kgToInput, weightLabel } from '@/src/units';
@@ -50,6 +51,10 @@ export default function You() {
       <Display style={{ marginTop: space(2) }}>
         {p.name || 'Your'} <Italic>{p.name ? 'era.' : 'profile.'}</Italic>
       </Display>
+
+      {/* Coach first — it's the one thing that needs setting up */}
+      <SectionHeader title="Coach" />
+      <CoachSettings />
 
       {/* Connections */}
       <SectionHeader title="Connections" />
@@ -192,29 +197,6 @@ export default function You() {
         <Field label="Injuries & preferences" value={p.notes} onChangeText={(notes) => s.updateProfile({ notes })} multiline />
       </Card>
 
-      <SectionHeader title="Coach server" />
-      <Card style={{ gap: space(4) }}>
-        <Body muted style={{ fontSize: 13 }}>
-          The AI coach runs on your own small server so your Claude key stays private. See the README for the 5-minute setup.
-        </Body>
-        <Field
-          label="Server URL"
-          value={s.server.url}
-          onChangeText={(url) => s.set({ server: { ...s.server, url } })}
-          placeholder="https://rep-coach.onrender.com"
-          autoCapitalize="none"
-          autoCorrect={false}
-        />
-        <Field
-          label="App password"
-          value={s.server.token}
-          onChangeText={(token) => s.set({ server: { ...s.server, token } })}
-          placeholder="APP_TOKEN from your server"
-          autoCapitalize="none"
-          secureTextEntry
-        />
-      </Card>
-
       <Button title="Erase all data" variant="danger" style={{ marginTop: space(8) }} onPress={reset} />
       <H2 style={{ textAlign: 'center', marginTop: space(8), color: colors.textFaint, fontSize: 18 }}>
         rep. <Italic style={{ color: colors.textFaint }}>v1</Italic>
@@ -270,3 +252,70 @@ const styles = {
   connTitle: { fontFamily: fonts.bodyMedium, fontSize: 15, color: colors.cream },
   connSub: { fontFamily: fonts.body, fontSize: 12, lineHeight: 17, color: colors.textMuted, marginTop: 2 },
 };
+
+/** Coach link + password, with an explicit Save & test so you know it worked. */
+function CoachSettings() {
+  const server = useStore((st) => st.server);
+  const status = useStore((st) => st.coachStatus);
+  const set = useStore((st) => st.set);
+  const [url, setUrl] = useState(server.url);
+  const [token, setToken] = useState(server.token);
+  const [checking, setChecking] = useState(false);
+  const dirty = url.trim() !== server.url || token.trim() !== server.token;
+
+  const save = async () => {
+    const next = { url: url.trim(), token: token.trim() };
+    set({ server: next, coachStatus: undefined });
+    setChecking(true);
+    const result = await testCoachConnection(next.url, next.token);
+    set({ coachStatus: result });
+    setChecking(false);
+  };
+
+  const message =
+    checking
+      ? { text: 'Checking… this can take up to a minute if the coach was asleep.', color: colors.textMuted }
+      : dirty
+        ? null
+        : status === 'ok'
+          ? { text: 'Connected ✓ Your coach is ready.', color: colors.latte }
+          : status === 'unauthorized'
+            ? { text: 'Wrong coach password. Double-check it and try again.', color: colors.sand }
+            : status === 'unreachable'
+              ? { text: 'Can’t reach the coach link. Check the link (it should start with https://) and your internet.', color: colors.sand }
+              : null;
+
+  return (
+    <Card style={{ gap: space(4) }}>
+      <Body muted style={{ fontSize: 13 }}>
+        Paste the coach link and coach password. If someone shared rep. with you, ask them for these.
+      </Body>
+      <Field
+        label="Coach link"
+        value={url}
+        onChangeText={setUrl}
+        placeholder="https://rep-coach-xxxx.onrender.com"
+        autoCapitalize="none"
+        autoCorrect={false}
+        keyboardType="url"
+      />
+      <Field
+        label="Coach password"
+        value={token}
+        onChangeText={setToken}
+        placeholder="Coach password"
+        autoCapitalize="none"
+        autoCorrect={false}
+        secureTextEntry
+      />
+      <Button
+        title={dirty || status !== 'ok' ? 'Save & test' : 'Test again'}
+        icon={status === 'ok' && !dirty ? 'checkmark' : 'link-outline'}
+        loading={checking}
+        disabled={!url.trim() || !token.trim()}
+        onPress={save}
+      />
+      {message ? <Body style={{ fontSize: 13, color: message.color }}>{message.text}</Body> : null}
+    </Card>
+  );
+}
