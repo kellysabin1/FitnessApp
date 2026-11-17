@@ -509,3 +509,17 @@ Privacy: eating data is sensitive — needs explicit coverage in REP-6.
 - **Splits (REP-27):** should a split have a weekly schedule (Mon = Lower, Tue = Upper…) so Today shows "today's workout", or just be a folder you pick from?
 - **Reminders (REP-21):** one reminder time for everyone (8 pm) or let each person pick a time (default 8 pm)? Should rest days (no workout planned) skip the reminder?
 - **Accounts (REP-13):** sign-in methods stay email + password? (Sign in with Apple becomes possible with the Apple Developer account.)
+
+## Product decisions — round 2
+
+| Topic | Decision → spec |
+|---|---|
+| **Challenge daily tasks (REP-24b)** | During setup, ask **"Add daily tasks?"** with example chips (e.g. *Drink 3 L water*, *Stretch 10 min*, *Walk outside 20 min*, *8 hours of sleep*, *No added sugar*) plus a **write-in** option. **Max 3 tasks per challenge.** Members tick tasks off each day on the challenge page (and Today); completions show in the points breakdown. ("Complete a planned workout" is already covered by Group-plan challenges.) |
+| **Targets (REP-16/17)** | If the user gave a target when setting goals, the AI **uses it**. If not, the AI **discusses goals** with them; if there's still no target after that, the AI **suggests** one. |
+| **Splits (REP-27)** | A split has a weekly schedule, but it's a **rolling order**, not fixed weekdays: if a day is missed, that workout **moves to the next day**. Today shows **"Up next"** — the next workout in the split that hasn't been done this cycle. |
+| **Reminders (REP-21)** | Default **8 pm**, each person can **pick their own time**; email and push each switchable. |
+| **Sign-in (REP-13)** | **Email + password** for now; add Sign in with Apple once the Apple Developer account exists. |
+
+### Still open
+- **Task points:** how many points is one completed daily task worth? *(Proposal: 2 points per task per day — so 3 tasks = up to 6/day, less than a workout's 10.)*
+- **Reminders on rest days:** with a rolling split there's no fixed rest day. *(Proposal: still remind at the chosen time if nothing's logged, with a one-tap "Rest day today" action that skips the reminder and keeps the streak fair.)*
