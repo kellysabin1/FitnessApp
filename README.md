@@ -1,6 +1,6 @@
 # rep.
 
-New here? Read the plain-English guide: [docs/HOW-IT-WORKS.md](docs/HOW-IT-WORKS.md)
+New here? Plain-English guide: [docs/HOW-IT-WORKS.md](docs/HOW-IT-WORKS.md) · Technical architecture: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 
 A moody workout tracker in bone, espresso, burnt olive and oxide with a built-in AI personal trainer.
 
