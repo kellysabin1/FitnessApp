@@ -158,3 +158,17 @@ insert into task_checks(challenge_id, user_id, day, task_index) values (:'tch', 
 select pg_temp.as_user(:'A');
 select username, tasks_done, pts_tasks, points, pts_workouts + pts_steps + pts_streaks + pts_plan + pts_tasks = points as adds_up
 from challenge_leaderboard(:'tch') where username = 'kelly';
+
+-- ───── v6: splits and targets ─────
+reset role; set role authenticated;
+\echo '--- T42 owner saves splits + targets (expect 1 split, 1 target):'
+select pg_temp.as_user(:'A');
+update user_data set splits = '[{"id":"s1","name":"Upper/lower","workouts":[]}]', targets = '[{"id":"t1","kind":"lift","title":"Hip Thrust 155 lb"}]' where user_id = :'A';
+select jsonb_array_length(splits), jsonb_array_length(targets) from user_data where user_id = :'A';
+\echo '--- T43 another user cannot read or overwrite them (expect 0 rows read, 0 rows updated):'
+select pg_temp.as_user(:'B');
+select count(*) from user_data where user_id = :'A';
+with u as (update user_data set targets = '[]' where user_id = :'A' returning 1) select count(*) from u;
+\echo '--- T44 oversized splits rejected (expect check constraint ERROR):'
+select pg_temp.as_user(:'A');
+update user_data set splits = jsonb_build_array(repeat('x', 300001)) where user_id = :'A';

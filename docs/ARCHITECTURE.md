@@ -50,6 +50,12 @@ Three runtime tiers, all managed SaaS, no servers we patch ourselves:
   - Both require a dev/production build (`eas.json` profiles exist; bundle ID `com.kellysabin.rep`), which
     requires an Apple Developer Program membership.
 
+- **Training model (`src/training.ts`):** a *split* is an ordered list of workouts; "Up next" is the workout after
+  the last finished one from that split (rolling — a missed day doesn't skip anything). A *target* stores start,
+  target and dates in canonical units; current value is derived from logged data (body log, heaviest working set
+  since the start date, 7-day step average, workouts this week) or manual check-ins (run times, custom). Pace =
+  progress vs. a straight line from start to deadline.
+
 ## 3. API server (`server/`)
 
 | Route | Auth | Purpose |
@@ -58,7 +64,7 @@ Three runtime tiers, all managed SaaS, no servers we patch ourselves:
 | `GET /push/public-key` | none | VAPID public key for subscriptions |
 | `POST /push/activity` | Supabase user JWT (verified via `auth.getUser` with service-role client) | Fan out Web Push for feed items |
 | `GET /coach/access` | Supabase user JWT | Whether this account has coach access + daily limits |
-| `POST /coach/chat`, `POST /coach/plan` | Supabase JWT **and** `profiles.coach_enabled` (legacy APP_TOKEN accepted until `ALLOW_APP_TOKEN=false`) | AI coach, with per-user daily quotas |
+| `POST /coach/chat`, `POST /coach/plan`, `POST /coach/split`, `POST /coach/target-plan` | Supabase JWT **and** `profiles.coach_enabled` (legacy APP_TOKEN accepted until `ALLOW_APP_TOKEN=false`) | AI coach, with per-user daily quotas |
 | `GET /auth-check`, `POST /oura/token`, `POST /oura/refresh` | Any signed-in user or legacy APP_TOKEN | Connection check, OAuth code/refresh exchange |
 
 - **Per-user coach access (REP-1):** `profiles.coach_enabled` is protected with column-level privileges —
@@ -72,7 +78,9 @@ Three runtime tiers, all managed SaaS, no servers we patch ourselves:
   context snapshot (profile, goals, last 12 workouts, e1RMs, 7-day wearable data) and sends it per request.
   System persona is prompt-cached (`cache_control: ephemeral`). Chat uses `effort: low`; the weekly plan
   uses `effort: medium` with **structured output** (Zod schema → `messages.parse`) so the UI gets typed
-  JSON. Server-side refusal fallback (`fallbacks: "default"`) is enabled; refusals are handled explicitly.
+  JSON. The same pattern builds a split (`/coach/split`: days/week + optional request → named workouts with
+  sets × reps, exercises chosen from the app's library) and a per-target plan (`/coach/target-plan`). Plan,
+  split and target-plan share the daily `plan` quota. Server-side refusal fallback (`fallbacks: "default"`) is enabled; refusals are handled explicitly.
   Typed SDK errors map to user-safe messages (401→bad key, 429→busy, etc.).
 - **Push:** `web-push` (VAPID). Keys are generated on first use and stored in `app_secrets` (service-role
   only), so there's nothing to configure. Anti-abuse: caller must be the author, items must be < 10 min
@@ -107,12 +115,13 @@ Postgres Row-Level Security (RLS). The **service-role key** (bypasses RLS) exist
   `add_friend_to_challenge`) with `EXECUTE` revoked from `anon`/`public`.
 - **Leaderboard** is computed server-side in SQL (`challenge_leaderboard`, CTE pipeline) so scoring can't
   be manipulated by the client.
-- **Tests:** `supabase/rls_test.sql` — 42 assertions (cross-user write attempts, visibility, invite codes,
+- **Tests:** `supabase/rls_test.sql` — 45 assertions (cross-user write attempts, visibility, invite codes,
   scoring incl. plan-only mode and streaks, anon access). Run against local Postgres 16 with a mocked
   `auth.uid()`; also run as an upgrade test from the previous schema version.
 
 **Accounts are required** (since v5): the welcome screen gates the app; sign-in restores everything. Private
-account data lives in owner-only tables — `user_data` (profile, settings, custom exercises) and `body_entries`
+account data lives in owner-only tables — `user_data` (profile, settings incl. active split, custom exercises,
+`splits` and `targets` as JSON documents capped at ~300 KB each — v6) and `body_entries`
 (body log; never visible to challenge-mates). Challenges can have up to 3 daily tasks (`challenges.tasks`,
 check-offs in `task_checks`, +2 points each, today/yesterday only).
 

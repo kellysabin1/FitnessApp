@@ -264,7 +264,7 @@ Current strings to rewrite (with location):
 
 ## Epic G — Goals
 
-### REP-16 · More customizable goals
+### REP-16 · More customizable goals — ✅ Done as **targets** (Progress tab: lift, body weight, run time, steps/day, workouts/week, waist/hips/body fat, or anything custom — each with a timeframe, on-pace tracking and an AI plan)
 **Type:** Feature · **Priority:** TBD · **Size:** M · **Depends on:** —
 
 **Today:** goals are a fixed list of categories (get stronger, lose fat…) plus goal weight and step goal.
@@ -279,7 +279,7 @@ Current strings to rewrite (with location):
 - [ ] User can create, edit, pause and delete goals of each type.
 - [ ] Each goal shows current value vs. target, computed from logged data where possible.
 
-### REP-17 · Goal history and progress over time
+### REP-17 · Goal history and progress over time — ✅ Done (editing a target keeps the old version in its history; trend chart with target line; mark done / archive, finished targets stay viewable)
 **Type:** Feature · **Priority:** TBD · **Size:** M · **Depends on:** REP-16
 
 **Draft scope**
@@ -432,7 +432,7 @@ no button for it.
 
 **Open questions:** Which apps first? Workout history import, daily metrics, or both?
 
-### REP-27 · AI personal trainer — next iteration
+### REP-27 · AI personal trainer — next iteration — ✅ Splits part done (split folders on Train, rolling "Up next", AI-built / ready-made / your own splits, coach plan → startable workouts or saved, coach suggests targets, a coach plan per target)
 **Type:** Feature · **Priority:** TBD · **Size:** TBD · **Depends on:** REP-1 (per-user coach auth)
 
 **Today:** chat + weekly plan (focus, recommendations, step goal, recovery) using profile, goals, recent
@@ -495,13 +495,13 @@ Privacy: eating data is sensitive — needs explicit coverage in REP-6.
 | **M** | REP-8 CI + branch protection | After REP-9/10 |
 | **M–L** | REP-13 Accounts required + full sync | Sign-up in onboarding; sync profile, settings, custom exercises, splits, goals; body stats stay private (owner-only). **Unblocks** reminders, splits sync, goals. |
 | **M–L** | REP-4 + REP-21 Email (verification) + daily reminders | Shared email provider (e.g. Resend) + a daily scheduler; per-user time zone; notification settings page. After REP-13. |
-| **L** | REP-27 Splits/folders + AI-generated splits + "add coach plan as workouts" | Saved routines and folders on Train; AI builds a split from goals (structured output → editable folder). |
-| **L–XL** | REP-16/17 Goals, targets & tracker page | Goals drive suggested workouts, coach and progress; targets with timeframe + plan; one tracker page. Builds on REP-27. |
+| ~~L~~ ✅ | REP-27 Splits/folders + AI-generated splits + "add coach plan as workouts" | Shipped. |
+| ~~L–XL~~ ✅ | REP-16/17 Goals, targets & tracker page | Shipped. |
 | **L** | REP-12 Staging + automated migrations | |
 | **XL / blocked** | REP-26 Health imports | Apple Health (also carries RingConn, Oura, Garmin, Strava, Whoop data), Google Health Connect for Android. Needs the native app → Apple Developer Program. |
 | **XL / later** | REP-28 Meals & macros | Needs design: AI photo logging, barcode scan, food database search — no manual macro entry. |
 
-**Recommended next build order:** REP-13 (accounts everywhere) → REP-27 (splits & AI splits) → REP-16/17 (goals, targets, tracker) → REP-21 (reminders). Small items (REP-9/10/7/11) can be slotted in between.
+**Recommended next build order:** ~~REP-13~~ ✅ → ~~REP-27~~ ✅ → ~~REP-16/17~~ ✅ → **REP-21 (reminders) + REP-4** next. Small items (REP-9/10/7/11) can be slotted in between.
 
 ### Open questions for the next round
 - **Challenge "tasks" (REP-24b):** what's a task? e.g. a daily checklist item ("drink 3L water", "stretch 10 min") that members tick off and earn points for? Or weekly targets ("4 workouts this week")?

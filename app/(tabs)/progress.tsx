@@ -3,8 +3,9 @@ import { useState } from 'react';
 import { Pressable, Text, useWindowDimensions, View } from 'react-native';
 import { Bars, LineChart } from '@/src/components/charts';
 import { Body, Button, Card, Chip, Display, Empty, Eyebrow, Icon, Italic, Row, Screen, SectionHeader, Stat } from '@/src/components/ui';
+import { TargetCard } from '@/src/components/TargetCard';
 import { finished, lastNDates, latestBody, weightSeries } from '@/src/stats';
-import { healthForDate, useStore } from '@/src/store';
+import { GOAL_LABEL, healthForDate, useStore } from '@/src/store';
 import { colors, fonts, space } from '@/src/theme';
 import { displayWeight, kgToLb, weightLabel } from '@/src/units';
 
@@ -50,6 +51,9 @@ export default function Progress() {
 
   const measurements = [...s.body].reverse().slice(0, 8);
   const bf = latestBody(s.body, 'bodyFatPct');
+  const activeTargets = s.targets.filter((t) => t.status === 'active');
+  const pastTargets = s.targets.filter((t) => t.status !== 'active');
+  const [showPast, setShowPast] = useState(false);
 
   return (
     <Screen>
@@ -57,6 +61,49 @@ export default function Progress() {
       <Display style={{ marginTop: space(2) }}>
         Proof it’s <Italic>working.</Italic>
       </Display>
+
+      {s.profile.goals.length ? (
+        <Row gap={2} style={{ flexWrap: 'wrap', marginTop: space(4) }}>
+          {s.profile.goals.map((g) => (
+            <Chip key={g} label={GOAL_LABEL[g]} active />
+          ))}
+          <Chip label="Edit goals" icon="create-outline" onPress={() => router.push('/you')} />
+        </Row>
+      ) : null}
+
+      <SectionHeader title="Targets" action="+ New" onAction={() => router.push('/target-new')} />
+      {activeTargets.length ? (
+        <View style={{ gap: space(3) }}>
+          {activeTargets.map((t) => (
+            <TargetCard key={t.id} t={t} />
+          ))}
+        </View>
+      ) : (
+        <Empty
+          icon="flag-outline"
+          title="Give your goals a finish line"
+          text="A target is a number and a date — like a 135 lb hip thrust in 8 weeks. Set one yourself, or let your coach suggest a few."
+        >
+          <Row gap={2}>
+            <Button title="New target" small onPress={() => router.push('/target-new')} />
+            <Button title="Ask my coach" small variant="secondary" onPress={() => router.push('/coach')} />
+          </Row>
+        </Empty>
+      )}
+      {pastTargets.length ? (
+        <Pressable onPress={() => setShowPast(!showPast)} style={{ marginTop: space(3) }}>
+          <Text style={{ fontFamily: fonts.body, fontSize: 13, color: colors.textMuted }}>
+            {showPast ? 'Hide' : 'Show'} finished & archived ({pastTargets.length})
+          </Text>
+        </Pressable>
+      ) : null}
+      {showPast ? (
+        <View style={{ gap: space(3), marginTop: space(3) }}>
+          {pastTargets.map((t) => (
+            <TargetCard key={t.id} t={t} />
+          ))}
+        </View>
+      ) : null}
 
       <SectionHeader title="Weight" action="+ Log" onAction={() => router.push('/log-body')} />
       {series.length < 2 ? (

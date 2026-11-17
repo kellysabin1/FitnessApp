@@ -567,3 +567,13 @@ alter table public.body_entries enable row level security;
 drop policy if exists "owner only" on public.body_entries;
 create policy "owner only" on public.body_entries
   for all to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
+
+-- v6: workout splits and progress targets (owner-only, like the rest of user_data)
+alter table public.user_data add column if not exists splits jsonb not null default '[]'::jsonb;
+alter table public.user_data add column if not exists targets jsonb not null default '[]'::jsonb;
+do $$ begin
+  alter table public.user_data add constraint user_data_splits_size check (octet_length(splits::text) <= 300000);
+exception when duplicate_object then null; end $$;
+do $$ begin
+  alter table public.user_data add constraint user_data_targets_size check (octet_length(targets::text) <= 300000);
+exception when duplicate_object then null; end $$;

@@ -77,7 +77,8 @@ rep-coach address.
 
 ```
 app/          every screen (Today, Train, Progress, Friends, Coach, You, workouts, challenges…)
-src/          shared building blocks: colours & fonts, data storage, charts, health connections
+src/          shared building blocks: colours & fonts, data storage, charts, health connections,
+              splits & targets logic (training.ts, splits.ts)
 src/social/   accounts, friends, challenges, notifications
 server/       the coach server (AI coach + notifications)
 supabase/     database setup (schema.sql) and privacy tests (rls_test.sql)
@@ -87,7 +88,9 @@ public/       website extras (home-screen icon, notification helper)
 
 ## What's done vs. still to come
 
-**Working now:** workout logging (live and after the fact), body & goals tracking, AI coach, accounts,
+**Working now:** workout logging (live and after the fact), body & goals tracking, splits with a rolling
+"Up next" (your own, ready-made, or built by the coach), targets with deadlines, pace tracking and a coach plan
+on the Progress tab, AI coach, accounts,
 friends, challenges (any-workout or group-plan), leaderboards, feed, reactions, nudges, notifications.
 
 **Needs the $99 Apple Developer account:** the real iPhone app, which unlocks **Apple Health,

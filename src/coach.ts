@@ -9,6 +9,9 @@ import {
   latestBody,
 } from './stats';
 import type { CoachPlan } from './store';
+import { uid } from './store';
+import { allExercises } from './exercises';
+import { describeTarget, type PlannedExercise, type Split, type Target, TARGET_KIND_LABEL, type TargetPlan, targetsForCoach, upNext } from './training';
 import { GOAL_LABEL, healthForDate, todayKey, useStore } from './store';
 import { displayHeight, displayWeight, weightLabel } from './units';
 
@@ -91,6 +94,20 @@ export function buildCoachContext(): string {
     );
   }
 
+  const ctx = { workouts: s.workouts, body: s.body, health: s.health };
+  const targetsText = targetsForCoach(s.targets ?? [], ctx, u);
+  lines.push('## Active targets');
+  lines.push(targetsText || 'None set yet.');
+  const split = s.splits?.find((x) => x.id === s.activeSplitId);
+  if (split) {
+    const nxt = upNext(split, s.workouts);
+    lines.push(`## Current split: ${split.name} (rolling order)`);
+    split.workouts.forEach((w, i) =>
+      lines.push(`${i + 1}. ${w.title}: ${w.exercises.map((e) => `${e.name}${e.sets ? ` ${e.sets}×${e.reps ?? ''}` : ''}`).join(', ')}`),
+    );
+    if (nxt) lines.push(`Up next: ${nxt.workout.title}`);
+  }
+
   const prs = personalRecords(s.workouts).slice(0, 10);
   if (prs.length) {
     lines.push('## Estimated 1RMs');
@@ -110,9 +127,59 @@ export async function askCoach(message: string): Promise<string> {
   return reply;
 }
 
+const library = () => allExercises().map((e) => e.name);
+
 export async function generatePlan(): Promise<CoachPlan> {
   const plan = await serverPost<Omit<CoachPlan, 'generatedAt'>>('/coach/plan', {
     context: buildCoachContext(),
+    library: library(),
   });
   return { ...plan, generatedAt: new Date().toISOString() };
+}
+
+interface SplitOut {
+  name: string;
+  notes: string;
+  workouts: { title: string; focus: string; exercises: PlannedExercise[] }[];
+}
+
+/** AI-built split from goals, experience, equipment, targets. Not saved until the user keeps it. */
+export async function generateSplit(daysPerWeek: number, request?: string): Promise<Split> {
+  const out = await serverPost<SplitOut>('/coach/split', { context: buildCoachContext(), library: library(), daysPerWeek, request });
+  const t = new Date().toISOString();
+  return {
+    id: uid(),
+    name: out.name,
+    notes: out.notes,
+    source: 'ai',
+    workouts: out.workouts.map((w) => ({ id: uid(), title: w.title, focus: w.focus, exercises: w.exercises })),
+    createdAt: t,
+    updatedAt: t,
+  };
+}
+
+interface TargetPlanOut {
+  summary: string;
+  weekly: string[];
+  actions: string[];
+  stepGoal: number | null;
+  workouts: { title: string; focus: string; exercises: PlannedExercise[] }[];
+}
+
+export async function generateTargetPlan(t: Target): Promise<TargetPlan> {
+  const u = useStore.getState().units;
+  const extra = t.kind === 'lift' ? ` (exercise: ${t.exercise})` : t.kind === 'run' ? ` (distance: ${t.runDistance ?? 'unspecified'})` : '';
+  const out = await serverPost<TargetPlanOut>('/coach/target-plan', {
+    context: buildCoachContext(),
+    library: library(),
+    target: `${t.title}${extra}: ${describeTarget(t, u)} (${TARGET_KIND_LABEL[t.kind]})`,
+  });
+  return {
+    generatedAt: new Date().toISOString(),
+    summary: out.summary,
+    weekly: out.weekly,
+    actions: out.actions,
+    stepGoal: out.stepGoal,
+    workouts: out.workouts.map((w) => ({ id: uid(), title: w.title, focus: w.focus, exercises: w.exercises })),
+  };
 }

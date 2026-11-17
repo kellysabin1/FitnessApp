@@ -6,11 +6,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Body, Button, Card, Display, Eyebrow, H2, Icon, Italic, Row, tap } from '@/src/components/ui';
 import { askCoach, generatePlan } from '@/src/coach';
 import { useStore } from '@/src/store';
+import { exerciseLabel, saveToCoachFolder, startPlannedWorkout, toPlanned } from '@/src/splits';
 import { checkCoachAccess, type CoachAccess, isCoachConfigured, usesAccountForCoach } from '@/src/api';
 import { router, useFocusEffect } from 'expo-router';
 import { colors, fonts, gradients, radius, space } from '@/src/theme';
 
 const PROMPTS = [
+  'Help me set a target for my goals',
   'What should I train today based on my recovery?',
   'Suggest 3 new exercises to rotate in',
   'Am I progressing on my lifts?',
@@ -26,6 +28,7 @@ export default function Coach() {
   const [sending, setSending] = useState(false);
   const [planning, setPlanning] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [savedRecs, setSavedRecs] = useState<string[]>([]);
   const [access, setAccess] = useState<CoachAccess | 'checking'>('checking');
   const signedIn = usesAccountForCoach();
 
@@ -131,9 +134,56 @@ export default function Coach() {
                   <View key={i} style={styles.rec}>
                     <Text style={styles.recTitle}>{r.title}</Text>
                     <Text style={styles.recWhy}>{r.why}</Text>
-                    {r.exercises.length ? <Text style={styles.recEx}>{r.exercises.join(' · ')}</Text> : null}
+                    {r.exercises.length ? (
+                      <>
+                        <Text style={styles.recEx}>{r.exercises.map(exerciseLabel).join(' · ')}</Text>
+                        <Row gap={2} style={{ marginTop: space(2) }}>
+                          <Button
+                            small
+                            title="Start"
+                            icon="play"
+                            onPress={() => router.push(`/workout/${startPlannedWorkout(r.title, r.exercises.map(toPlanned))}`)}
+                          />
+                          <Button
+                            small
+                            variant="secondary"
+                            title={savedRecs.includes(r.title) ? 'Saved ✓' : 'Save to my workouts'}
+                            disabled={savedRecs.includes(r.title)}
+                            onPress={() => {
+                              saveToCoachFolder(r.title, r.exercises.map(toPlanned));
+                              setSavedRecs((x) => [...x, r.title]);
+                            }}
+                          />
+                        </Row>
+                      </>
+                    ) : null}
                   </View>
                 ))}
+                {plan.suggestedTargets?.length ? (
+                  <View style={styles.rec}>
+                    <Text style={styles.recTitle}>Suggested targets</Text>
+                    {plan.suggestedTargets.map((t, k) => (
+                      <View key={k} style={{ marginTop: space(2), gap: space(1) }}>
+                        <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 14, color: colors.cream }}>
+                          {t.title} · {t.weeks} week{t.weeks === 1 ? '' : 's'}
+                        </Text>
+                        <Text style={styles.recWhy}>{t.why}</Text>
+                        <Button
+                          small
+                          variant="secondary"
+                          icon="flag-outline"
+                          title="Add target"
+                          onPress={() =>
+                            router.push({
+                              pathname: '/target-new',
+                              params: { kind: t.kind, title: t.title, exercise: t.exercise ?? '', value: String(t.target_value), weeks: String(t.weeks) },
+                            })
+                          }
+                        />
+                      </View>
+                    ))}
+                  </View>
+                ) : null}
                 <View style={styles.rec}>
                   <Text style={styles.recTitle}>Recovery</Text>
                   <Text style={styles.recWhy}>{plan.recovery}</Text>

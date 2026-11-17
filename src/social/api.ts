@@ -160,8 +160,10 @@ export async function syncUp() {
     const { error } = await c.from('user_data').upsert({
       user_id: s.account.userId,
       profile: s.profile,
-      settings: { units: s.units },
+      settings: { units: s.units, activeSplitId: s.activeSplitId ?? null },
       custom_exercises: s.customExercises ?? [],
+      splits: s.splits ?? [],
+      targets: s.targets ?? [],
       updated_at: s.userDataUpdatedAt ?? started,
     });
     if (error) throw new Error(friendly(error));
@@ -220,7 +222,7 @@ async function pullUserData() {
   if (!s.account) return;
   const { data, error } = await c
     .from('user_data')
-    .select('profile, settings, custom_exercises, updated_at')
+    .select('profile, settings, custom_exercises, splits, targets, updated_at')
     .eq('user_id', s.account.userId)
     .maybeSingle();
   if (error) throw new Error(friendly(error));
@@ -234,6 +236,9 @@ async function pullUserData() {
     profile: { ...s.profile, ...remoteProfile },
     units: data.settings?.units === 'metric' ? 'metric' : data.settings?.units === 'us' ? 'us' : s.units,
     customExercises: [...byName.values()].sort((a, b) => a.name.localeCompare(b.name)),
+    splits: Array.isArray(data.splits) ? data.splits : s.splits,
+    targets: Array.isArray(data.targets) ? data.targets : s.targets,
+    activeSplitId: data.settings?.activeSplitId ?? undefined,
     userDataUpdatedAt: data.updated_at,
     // a restored profile means this person already finished onboarding
     onboarded: s.onboarded || !!remoteProfile.name || (remoteProfile.goals?.length ?? 0) > 0,

@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import type { ExerciseCategory, ExerciseDef, ExerciseKind } from './exercises';
+import type { PlannedExercise, Split, Target } from './training';
 import type { Units } from './units';
 
 // ---------- Types ----------
@@ -71,6 +72,9 @@ export interface Workout {
   logged?: boolean;
   /** title of the challenge-plan workout this completes, if started from a plan */
   planItem?: string;
+  /** started from a split (for the rolling "up next" order) */
+  splitId?: string;
+  splitWorkoutId?: string;
   /** last local edit (ISO) — used to sync changes */
   updatedAt?: string;
 }
@@ -117,8 +121,19 @@ export interface CoachPlan {
   headline: string;
   stepGoal: number;
   focus: string;
-  recommendations: { title: string; why: string; exercises: string[] }[];
+  /** exercises are structured since v6; older saved plans have plain strings */
+  recommendations: { title: string; why: string; exercises: (PlannedExercise | string)[] }[];
   recovery: string;
+  suggestedTargets?: SuggestedTarget[];
+}
+
+export interface SuggestedTarget {
+  kind: import('./training').TargetKind;
+  title: string;
+  exercise: string | null;
+  target_value: number;
+  weeks: number;
+  why: string;
 }
 
 export interface OuraAuth {
@@ -141,6 +156,11 @@ interface State {
   server: { url: string; token: string };
   /** Exercises this person created (saved so they show up in search next time). */
   customExercises: ExerciseDef[];
+  /** Workout splits (folders of workouts in a rolling order). */
+  splits: Split[];
+  activeSplitId?: string;
+  /** Measurable targets with a timeframe (progress tracker). */
+  targets: Target[];
   /** Signed-in friends & challenges account (undefined when signed out). */
   account?: Account;
   /** Last successful upload of workouts/steps (ISO). */
@@ -161,7 +181,7 @@ interface State {
   // actions
   set: (patch: Partial<State>) => void;
   updateProfile: (patch: Partial<Profile>) => void;
-  startWorkout: (title?: string, planItem?: string) => string;
+  startWorkout: (title?: string, planItem?: string, split?: { splitId: string; splitWorkoutId: string }) => string;
   /** Create an already-finished workout that happened in the past. */
   logPastWorkout: (title: string, startedAt: Date, durationMin: number, planItem?: string) => string;
   updateWorkout: (id: string, fn: (w: Workout) => Workout) => void;
@@ -174,6 +194,11 @@ interface State {
   upsertHealth: (days: HealthDay[]) => void;
   addCoachMessage: (m: Omit<CoachMessage, 'id' | 'at'>) => void;
   addCustomExercise: (e: ExerciseDef) => void;
+  saveSplit: (s: Split) => void;
+  deleteSplit: (id: string) => void;
+  setActiveSplit: (id?: string) => void;
+  saveTarget: (t: Target) => void;
+  deleteTarget: (id: string) => void;
   deleteCustomExercise: (name: string) => void;
   clearCoach: () => void;
   resetAll: () => void;
@@ -212,6 +237,9 @@ const initial = {
   coachStatus: undefined,
   account: undefined,
   customExercises: [] as ExerciseDef[],
+  splits: [] as Split[],
+  activeSplitId: undefined as string | undefined,
+  targets: [] as Target[],
   lastSyncAt: undefined,
   pendingDeletes: [] as string[],
   pendingBodyDeletes: [] as string[],
@@ -231,7 +259,7 @@ export const useStore = create<State>()(
         // changing units counts as a profile/settings change for syncing
         set('units' in patch && patch.units !== get().units ? { ...patch, userDataUpdatedAt: now() } : patch),
       updateProfile: (patch) => set({ profile: { ...get().profile, ...patch }, userDataUpdatedAt: now() }),
-      startWorkout: (title, planItem) => {
+      startWorkout: (title, planItem, split) => {
         const id = uid();
         const w: Workout = {
           id,
@@ -239,6 +267,8 @@ export const useStore = create<State>()(
           startedAt: new Date().toISOString(),
           exercises: [],
           planItem,
+          splitId: split?.splitId,
+          splitWorkoutId: split?.splitWorkoutId,
           updatedAt: new Date().toISOString(),
         };
         set({ workouts: [w, ...get().workouts] });
@@ -309,6 +339,24 @@ export const useStore = create<State>()(
           userDataUpdatedAt: now(),
         });
       },
+      saveSplit: (sp) => {
+        const next = { ...sp, updatedAt: now() };
+        const exists = get().splits.some((x) => x.id === sp.id);
+        set({ splits: exists ? get().splits.map((x) => (x.id === sp.id ? next : x)) : [...get().splits, next], userDataUpdatedAt: now() });
+      },
+      deleteSplit: (id) =>
+        set({
+          splits: get().splits.filter((x) => x.id !== id),
+          activeSplitId: get().activeSplitId === id ? undefined : get().activeSplitId,
+          userDataUpdatedAt: now(),
+        }),
+      setActiveSplit: (id) => set({ activeSplitId: id, userDataUpdatedAt: now() }),
+      saveTarget: (t) => {
+        const next = { ...t, updatedAt: now() };
+        const exists = get().targets.some((x) => x.id === t.id);
+        set({ targets: exists ? get().targets.map((x) => (x.id === t.id ? next : x)) : [...get().targets, next], userDataUpdatedAt: now() });
+      },
+      deleteTarget: (id) => set({ targets: get().targets.filter((x) => x.id !== id), userDataUpdatedAt: now() }),
       deleteCustomExercise: (name) =>
         set({ customExercises: (get().customExercises ?? []).filter((x) => x.name !== name), userDataUpdatedAt: now() }),
       resetAll: () => set({ ...initial }),

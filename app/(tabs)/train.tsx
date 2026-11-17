@@ -1,11 +1,13 @@
 import { router } from 'expo-router';
 import { Text, View } from 'react-native';
-import { Body, Button, Card, Display, Empty, Eyebrow, H2, Italic, Row, Screen, SectionHeader } from '@/src/components/ui';
+import { Body, Button, Card, Display, Empty, Eyebrow, H2, Icon, Italic, Row, Screen, SectionHeader } from '@/src/components/ui';
 import { finished, personalRecords, relativeDay, whenLabel, setsDone, workoutDurationMin, workoutVolumeKg } from '@/src/stats';
 import { useStore, Workout } from '@/src/store';
 import { colors, fonts, space } from '@/src/theme';
 import { addExercisesByName } from '@/src/workoutActions';
 import { TEMPLATES } from '@/src/templates';
+import { byGoals } from '@/src/splits';
+import { UpNextCard } from '@/src/components/UpNext';
 import { displayWeight, weightLabel } from '@/src/units';
 
 export default function Train() {
@@ -27,6 +29,8 @@ export default function Train() {
         Lift, flow, <Italic>repeat.</Italic>
       </Display>
 
+      <UpNextCard style={{ marginTop: space(6) }} />
+
       <Button
         title="Start empty workout"
         icon="add"
@@ -41,14 +45,42 @@ export default function Train() {
         onPress={() => router.push('/log-past')}
       />
 
+      <SectionHeader title="Your splits" action="+ New split" onAction={() => router.push('/split-new')} />
+      {s.splits.length === 0 ? (
+        <Empty icon="folder-open-outline" title="No splits yet" text="A split is a folder of workouts you rotate through. Build your own, let your coach design one, or start from a ready-made split.">
+          <Button title="Create a split" icon="add" onPress={() => router.push('/split-new')} />
+        </Empty>
+      ) : (
+        <View style={{ gap: space(3) }}>
+          {s.splits.map((sp) => (
+            <Card key={sp.id} onPress={() => router.push({ pathname: '/split/[id]', params: { id: sp.id } })}>
+              <Row style={{ justifyContent: 'space-between' }}>
+                <Row gap={2} style={{ flex: 1 }}>
+                  <Icon name={sp.id === s.activeSplitId ? 'folder-open' : 'folder-outline'} size={18} color={sp.id === s.activeSplitId ? colors.latte : colors.textMuted} />
+                  <H2 style={{ fontSize: 20, flex: 1 }} >{sp.name}</H2>
+                </Row>
+                {sp.id === s.activeSplitId ? <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 11, color: colors.latte, letterSpacing: 1 }}>ACTIVE</Text> : null}
+              </Row>
+              <Body muted numberOfLines={1} style={{ fontSize: 13, marginTop: space(1) }}>
+                {sp.workouts.length} workout{sp.workouts.length === 1 ? '' : 's'} · {sp.workouts.map((w) => w.title).join(' · ')}
+              </Body>
+            </Card>
+          ))}
+        </View>
+      )}
+
       <SectionHeader title="Quick start" />
       <View style={{ gap: space(3) }}>
-        {TEMPLATES.map((t) => (
-          <Card key={t.title} tone={t.tone} onPress={() => startFromTemplate(t)}>
-            <H2 style={{ fontSize: 21 }}>{t.title}</H2>
-            <Body muted numberOfLines={1} style={{ fontSize: 13 }}>{t.exercises.join(' · ')}</Body>
-          </Card>
-        ))}
+        {byGoals(TEMPLATES, s.profile.goals).map((t) => {
+          const rec = (t.goals ?? []).some((g) => s.profile.goals.includes(g));
+          return (
+            <Card key={t.title} tone={t.tone} onPress={() => startFromTemplate(t)}>
+              {rec ? <Eyebrow color={colors.latte} style={{ marginBottom: space(1) }}>Recommended for your goals</Eyebrow> : null}
+              <H2 style={{ fontSize: 21 }}>{t.title}</H2>
+              <Body muted numberOfLines={1} style={{ fontSize: 13 }}>{t.exercises.join(' · ')}</Body>
+            </Card>
+          );
+        })}
       </View>
 
       {prs.length ? (

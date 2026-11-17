@@ -76,6 +76,10 @@ export default function RootLayout() {
         <Stack.Screen name="challenge-new" options={{ presentation: 'modal', title: 'New challenge' }} />
         <Stack.Screen name="join" options={{ presentation: 'modal', title: 'Join with code' }} />
         <Stack.Screen name="challenge/[id]" options={{ title: '' }} />
+        <Stack.Screen name="split/[id]" options={{ title: '' }} />
+        <Stack.Screen name="split-new" options={{ presentation: 'modal', title: 'New split' }} />
+        <Stack.Screen name="target/[id]" options={{ title: '' }} />
+        <Stack.Screen name="target-new" options={{ presentation: 'modal', title: 'New target' }} />
         <Stack.Screen name="join/[code]" options={{ headerShown: false }} />
       </Stack>
     </ThemeProvider>

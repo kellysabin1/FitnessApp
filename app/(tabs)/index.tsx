@@ -7,6 +7,7 @@ import { Bars, Ring } from '@/src/components/charts';
 import { Body, Button, Card, Display, Eyebrow, H2, Heart, Icon, Italic, Row, SectionHeader, Stat } from '@/src/components/ui';
 import { syncHealth } from '@/src/health/sync';
 import { TodayTasks } from '@/src/social/TodayTasks';
+import { UpNextCard } from '@/src/components/UpNext';
 import { lastNDates, relativeDay, setsDone, weekStreak, workoutDurationMin, workoutsThisWeek, latestBody } from '@/src/stats';
 import { healthForDate, todayKey, useStore } from '@/src/store';
 import { colors, fonts, gradients, space } from '@/src/theme';
@@ -99,6 +100,7 @@ export default function Today() {
 
         {/* Workout CTA */}
         <SectionHeader title="Train" action="History" onAction={() => router.push('/train')} />
+        {!active ? <UpNextCard style={{ marginBottom: space(3) }} /> : null}
         {active ? (
           <Card tone="tortoise" onPress={() => router.push(`/workout/${active.id}`)}>
             <Eyebrow color={colors.latte}>In progress</Eyebrow>
