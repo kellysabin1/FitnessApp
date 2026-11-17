@@ -126,3 +126,23 @@ export function whenLabel(iso: string) {
   if (day === 'Yesterday') return `Yesterday ${part}`;
   return `${day} · ${part}`;
 }
+
+/** The most recent finished session of an exercise (working sets only), for "last time" comparisons. */
+export function previousSession(workouts: Workout[], name: string, excludeId?: string) {
+  for (const w of finished(workouts)) {
+    if (w.id === excludeId) continue;
+    const ex = w.exercises.find((e) => e.name === name);
+    const sets = ex?.sets.filter(counts) ?? [];
+    if (sets.length) return { date: w.startedAt, sets };
+  }
+  return undefined;
+}
+
+/** Did this set beat the same set last time? Heavier, or same weight for more reps (reps only if no weight). */
+export function beats(now: SetEntry, prev?: SetEntry) {
+  if (!prev || !now.done || now.warmup || !now.reps) return false;
+  const w = now.weightKg ?? 0;
+  const pw = prev.weightKg ?? 0;
+  if (w > pw + 0.01) return true;
+  return Math.abs(w - pw) <= 0.01 && now.reps > (prev.reps ?? 0);
+}

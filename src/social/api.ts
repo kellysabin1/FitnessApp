@@ -255,6 +255,8 @@ export interface Challenge {
   plan: PlanItem[];
   /** 'any' = every workout counts · 'plan' = only group-plan workouts count */
   mode: ChallengeMode;
+  /** optional goal / house rules from the creator */
+  description?: string | null;
 }
 
 export type ChallengeMode = 'any' | 'plan';
@@ -274,6 +276,11 @@ export interface LeaderRow {
   plan_done: number;
   current_streak: number;
   points: number;
+  pts_workouts: number;
+  pts_steps: number;
+  pts_streaks: number;
+  pts_plan: number;
+  goal_days: number;
 }
 
 export interface FeedItem {
@@ -311,6 +318,7 @@ export async function createChallenge(input: {
   stepGoal: number;
   plan: PlanItem[];
   mode: ChallengeMode;
+  description?: string;
 }): Promise<Challenge> {
   await syncUp().catch(() => {});
   const { data, error } = await requireSb().rpc('create_challenge', {
@@ -324,6 +332,7 @@ export async function createChallenge(input: {
     p_step_goal: input.stepGoal,
     p_plan: input.plan,
     p_mode: input.mode,
+    p_description: input.description?.trim() || null,
   });
   if (error) throw new Error(friendly(error));
   return data as Challenge;

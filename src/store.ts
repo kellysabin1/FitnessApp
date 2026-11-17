@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
-import type { ExerciseCategory, ExerciseKind } from './exercises';
+import type { ExerciseCategory, ExerciseDef, ExerciseKind } from './exercises';
 import type { Units } from './units';
 
 // ---------- Types ----------
@@ -16,7 +16,7 @@ export type Goal =
 
 export const GOAL_LABEL: Record<Goal, string> = {
   build_strength: 'Get stronger',
-  grow_glutes: 'Build glutes & legs',
+  grow_glutes: 'Build lower body',
   lose_fat: 'Lose fat',
   recomp: 'Body recomp',
   endurance: 'Cardio endurance',
@@ -137,6 +137,8 @@ interface State {
   appleHealthEnabled: boolean;
   oura?: OuraAuth;
   server: { url: string; token: string };
+  /** Exercises this person created (saved so they show up in search next time). */
+  customExercises: ExerciseDef[];
   /** Signed-in friends & challenges account (undefined when signed out). */
   account?: Account;
   /** Last successful upload of workouts/steps (ISO). */
@@ -161,6 +163,8 @@ interface State {
   deleteBody: (id: string) => void;
   upsertHealth: (days: HealthDay[]) => void;
   addCoachMessage: (m: Omit<CoachMessage, 'id' | 'at'>) => void;
+  addCustomExercise: (e: ExerciseDef) => void;
+  deleteCustomExercise: (name: string) => void;
   clearCoach: () => void;
   resetAll: () => void;
 }
@@ -196,6 +200,7 @@ const initial = {
   oura: undefined,
   coachStatus: undefined,
   account: undefined,
+  customExercises: [] as ExerciseDef[],
   lastSyncAt: undefined,
   pendingDeletes: [] as string[],
   server: {
@@ -277,6 +282,12 @@ export const useStore = create<State>()(
       addCoachMessage: (m) =>
         set({ coach: [...get().coach, { ...m, id: uid(), at: new Date().toISOString() }] }),
       clearCoach: () => set({ coach: [] }),
+      addCustomExercise: (e) => {
+        const rest = (get().customExercises ?? []).filter((x) => x.name.toLowerCase() !== e.name.toLowerCase());
+        set({ customExercises: [...rest, { ...e, custom: true }].sort((a, b) => a.name.localeCompare(b.name)) });
+      },
+      deleteCustomExercise: (name) =>
+        set({ customExercises: (get().customExercises ?? []).filter((x) => x.name !== name) }),
       resetAll: () => set({ ...initial }),
     }),
     {

@@ -1,4 +1,4 @@
-import { EXERCISES, findExercise } from './exercises';
+import { findExercise } from './exercises';
 import { lastPerformance } from './stats';
 import { SetEntry, uid, useStore, WorkoutExercise } from './store';
 
@@ -22,4 +22,3 @@ export function addExercisesByName(workoutId: string, names: string[]) {
   }));
 }
 
-export const ALL_EXERCISES = EXERCISES;

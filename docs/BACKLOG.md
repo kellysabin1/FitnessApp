@@ -228,7 +228,7 @@ visible to challenge-mates (today: no)?
 
 ## Epic F — Brand voice & audience
 
-### REP-14 · Broaden the audience while keeping the aesthetic
+### REP-14 · Broaden the audience while keeping the aesthetic — ✅ Done (voice: calm & confident; no tone picker)
 **Type:** UX / Content · **Priority:** TBD · **Size:** S · **Depends on:** —
 
 **Draft scope**
@@ -294,7 +294,7 @@ Current strings to rewrite (with location):
 
 ## Epic H — Workout logging
 
-### REP-18 · Compare against previous workouts
+### REP-18 · Compare against previous workouts — ✅ Done as scoped (weight & reps only: "last time" line + ↑ on sets that beat it)
 **Type:** Feature · **Priority:** TBD · **Size:** M · **Depends on:** —
 
 **Today:** last session's numbers prefill new sets; PRs (estimated 1RM) are listed on the Train tab.
@@ -321,7 +321,7 @@ Current strings to rewrite (with location):
 - [ ] User can mark a set as warm-up in one tap; it's visually distinct.
 - [ ] Warm-ups don't change PRs or volume; existing sets default to "working".
 
-### REP-20 · Bigger exercise library + save custom exercises
+### REP-20 · Bigger exercise library + save custom exercises — ✅ Done (20+ single-leg/arm moves incl. Single-Leg Leg Press; custom exercises saved to "Yours")
 **Type:** Feature · **Priority:** TBD · **Size:** M · **Depends on:** —
 
 **Today:** ~90 built-in exercises. A typed-in name can be added to a workout, but it isn't saved to the
@@ -364,7 +364,7 @@ Same mechanism as REP-21, scheduled around meal times. Only meaningful once meal
 
 ## Epic J — Friends & challenges
 
-### REP-23 · Clearer, more descriptive points system
+### REP-23 · Clearer, more descriptive points system — ✅ Done (tap a score for the breakdown; ⓘ explains the rules)
 **Type:** Feature / UX · **Priority:** TBD · **Size:** M · **Depends on:** —
 
 **Today:** fixed rules (workout +10, 1,000 steps +1, step goal +5, streak day +3, plan bonus +5); the
@@ -383,7 +383,7 @@ leaderboard shows totals plus a few stats.
 **Open questions:** What felt unclear today — the rules, the numbers, or both? Points for things like
 duration, effort, PRs, or Pilates/cardio specifically?
 
-### REP-24 · More customizable challenges (times, details)
+### REP-24 · More customizable challenges (times, details) — ◐ Partly done (custom length 1–120 days, goal/house-rules text). Remaining: custom tasks — see Q below
 **Type:** Feature · **Priority:** TBD · **Size:** M · **Depends on:** REP-23
 
 **Draft scope**
@@ -457,3 +457,55 @@ proactive weekly check-in notification; uses goals from REP-16; remembers prefer
 
 **Open questions:** Full macro tracking or calories only? Should nutrition ever be visible to challenge-mates?
 Privacy: eating data is sensitive — needs explicit coverage in REP-6.
+
+---
+
+## Product decisions — round 1 (from the product owner)
+
+| # | Topic | Decision |
+|---|---|---|
+| 1 | Accounts | **Required for the whole app.** Existing Friends-tab accounts become full accounts. |
+| 2 | Body stats | **Always private** — never visible to challenge-mates. |
+| 3–4 | Voice | Calm and confident; keep the elegant aesthetic, drop "that girl" energy (men use it too). No tone picker. |
+| 5 | Goals | No single goal type matters most. Selected goals should shape the **pre-built workouts shown**, the **AI coach**, and **progress tracking**. |
+| 6 | Targets | Overall goals have **no deadlines**; add **actionable targets** with a timeframe and a plan (e.g. "−2 lb in 3 weeks", "mile 7:00 → 6:00 in 8 days"). One **progress/goal tracker page** combining goals, targets, plan and progress. |
+| 7 | Comparisons | Weight and reps only. ✅ shipped. |
+| 8 | Unilateral | Log the exercise only (no left/right). ✅ |
+| 9 | Exercises | Single-leg leg press. ✅ |
+| 10 | Reminders | **Email + push**, each switchable in settings. Send **by 8 pm local time if no workout logged that day**; skip if one was. |
+| 11 | Points | Tap a score to see where it came from + an info button with the rules. ✅ shipped. |
+| 12 | New point sources | Not now. |
+| 13 | Challenges | Custom length ✅. **Goals and tasks** of the challenge customizable during setup (open question below). |
+| 14 | Health import | The most commonly used apps. |
+| 15 | AI trainer + Train page | Coach plans become **real, startable workouts**. Train page gets **folders/splits**: build your own split (e.g. your 5 weekly workouts), have **AI generate a split from your goals**, or use built-in workouts. |
+| 16 | Meals | As much macro data as possible, but **no manual entry of nutrition facts** — needs a design discussion (later). |
+| 17 | Priority | Do small changes now; rank the rest by size. |
+
+## Size ranking of what's left (smallest → largest)
+
+| Size | Ticket | Notes / dependencies |
+|---|---|---|
+| **S** | REP-9 Commit the e2e test suite | 9 Playwright scripts already exist; move into the repo + `npm run e2e` |
+| **S** | REP-10 Lint & formatting | |
+| **S** | REP-7 Assets licence audit | Textures are generated in-repo; fonts are OFL |
+| **S** | REP-11 Error tracking & uptime | Needs a Sentry account |
+| **S** | REP-3 Lock CORS to the app's address | Small, but needs you to test right after deploy |
+| **M** | REP-24b Challenge tasks | Depends on the answer to the open question below |
+| **M** | REP-5 Delete account + export data | Pairs with REP-13 |
+| **M** | REP-8 CI + branch protection | After REP-9/10 |
+| **M–L** | REP-13 Accounts required + full sync | Sign-up in onboarding; sync profile, settings, custom exercises, splits, goals; body stats stay private (owner-only). **Unblocks** reminders, splits sync, goals. |
+| **M–L** | REP-4 + REP-21 Email (verification) + daily reminders | Shared email provider (e.g. Resend) + a daily scheduler; per-user time zone; notification settings page. After REP-13. |
+| **L** | REP-27 Splits/folders + AI-generated splits + "add coach plan as workouts" | Saved routines and folders on Train; AI builds a split from goals (structured output → editable folder). |
+| **L–XL** | REP-16/17 Goals, targets & tracker page | Goals drive suggested workouts, coach and progress; targets with timeframe + plan; one tracker page. Builds on REP-27. |
+| **L** | REP-12 Staging + automated migrations | |
+| **XL / blocked** | REP-26 Health imports | Apple Health (also carries RingConn, Oura, Garmin, Strava, Whoop data), Google Health Connect for Android. Needs the native app → Apple Developer Program. |
+| **XL / later** | REP-28 Meals & macros | Needs design: AI photo logging, barcode scan, food database search — no manual macro entry. |
+
+**Recommended next build order:** REP-13 (accounts everywhere) → REP-27 (splits & AI splits) → REP-16/17 (goals, targets, tracker) → REP-21 (reminders). Small items (REP-9/10/7/11) can be slotted in between.
+
+### Open questions for the next round
+- **Challenge "tasks" (REP-24b):** what's a task? e.g. a daily checklist item ("drink 3L water", "stretch 10 min") that members tick off and earn points for? Or weekly targets ("4 workouts this week")?
+- **Targets (REP-16/17):** should the AI build the plan for a target automatically, or suggest one you approve/edit?
+- **Splits (REP-27):** should a split have a weekly schedule (Mon = Lower, Tue = Upper…) so Today shows "today's workout", or just be a folder you pick from?
+- **Reminders (REP-21):** one reminder time for everyone (8 pm) or let each person pick a time (default 8 pm)? Should rest days (no workout planned) skip the reminder?
+- **Accounts (REP-13):** sign-in methods stay email + password? (Sign in with Apple becomes possible with the Apple Developer account.)

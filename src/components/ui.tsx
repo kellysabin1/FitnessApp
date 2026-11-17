@@ -270,7 +270,11 @@ export function Field({
     <View style={[{ gap: space(1.5) }, style]}>
       {label ? <Text style={styles.label}>{label}</Text> : null}
       <View style={styles.inputWrap}>
-        <TextInput placeholderTextColor={colors.textFaint} style={styles.input} {...props} />
+        <TextInput
+          placeholderTextColor={colors.textFaint}
+          style={[styles.input, props.multiline && styles.inputMultiline]}
+          {...props}
+        />
         {suffix ? <Text style={styles.suffix}>{suffix}</Text> : null}
       </View>
     </View>
@@ -346,6 +350,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: space(4),
   },
   input: { flex: 1, minWidth: 0, height: 50, color: colors.cream, fontFamily: fonts.body, fontSize: 16, outlineStyle: 'none' as never },
+  inputMultiline: { height: undefined, minHeight: 88, paddingTop: 14, paddingBottom: 14, textAlignVertical: 'top' },
   suffix: { fontFamily: fonts.body, color: colors.textMuted, marginLeft: space(2) },
   statValue: { fontFamily: fonts.display, fontSize: 30, color: colors.cream },
   statUnit: { fontFamily: fonts.body, fontSize: 13, color: colors.textMuted },

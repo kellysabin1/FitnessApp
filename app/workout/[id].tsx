@@ -4,7 +4,8 @@ import { Alert, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'r
 import { Body, Button, Card, Eyebrow, Icon, Row, Screen, tap } from '@/src/components/ui';
 import { CATEGORY_LABEL } from '@/src/exercises';
 import { When, WhenPicker } from '@/src/components/WhenPicker';
-import { whenLabel, workoutDurationMin } from '@/src/stats';
+import { beats, previousSession, whenLabel, workoutDurationMin } from '@/src/stats';
+import { displayWeight } from '@/src/units';
 import { afterWorkoutSaved } from '@/src/social/after';
 import { SetEntry, useStore, WorkoutExercise } from '@/src/store';
 import { colors, fonts, radius, space } from '@/src/theme';
@@ -14,6 +15,7 @@ export default function WorkoutScreen() {
   const { id, logged } = useLocalSearchParams<{ id: string; logged?: string }>();
   const w = useStore((s) => s.workouts.find((x) => x.id === id));
   const units = useStore((s) => s.units);
+  const allWorkouts = useStore((s) => s.workouts);
   const update = useStore((s) => s.updateWorkout);
   const finishWorkout = useStore((s) => s.finishWorkout);
   const deleteWorkout = useStore((s) => s.deleteWorkout);
@@ -103,6 +105,7 @@ export default function WorkoutScreen() {
               key={ex.id}
               ex={ex}
               units={units}
+              previous={previousSession(allWorkouts, ex.name, w.id)}
               autoDone={isDone}
               onChange={(fn) => setEx(ex.id, fn)}
               onRemove={() => update(w.id, (cur) => ({ ...cur, exercises: cur.exercises.filter((e) => e.id !== ex.id) }))}
@@ -172,12 +175,15 @@ export default function WorkoutScreen() {
 function ExerciseCard({
   ex,
   units,
+  previous,
   autoDone,
   onChange,
   onRemove,
 }: {
   ex: WorkoutExercise;
   units: Units;
+  /** Same exercise last time (working sets) — shown for weight × reps comparisons. */
+  previous?: { date: string; sets: SetEntry[] };
   /** Past workouts: typing a value marks the set done automatically. */
   autoDone?: boolean;
   onChange: (fn: (e: WorkoutExercise) => WorkoutExercise) => void;
@@ -193,6 +199,14 @@ function ExerciseCard({
         <View style={{ flex: 1 }}>
           <Text style={styles.cardTitle}>{ex.name}</Text>
           <Text style={styles.meta}>{CATEGORY_LABEL[ex.category]}</Text>
+          {previous && (ex.kind === 'weighted' || ex.kind === 'bodyweight') ? (
+            <Text style={styles.last} numberOfLines={2}>
+              Last time · {new Date(previous.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} ·{' '}
+              {previous.sets
+                .map((p) => (ex.kind === 'weighted' && p.weightKg ? `${displayWeight(p.weightKg, units)}×${p.reps ?? '?'}` : `${p.reps ?? '?'} reps`))
+                .join('  ')}
+            </Text>
+          ) : null}
         </View>
         <Pressable onPress={onRemove} hitSlop={10}>
           <Icon name="close" size={18} color={colors.textFaint} />
@@ -215,15 +229,22 @@ function ExerciseCard({
             accessibilityLabel={set.warmup ? 'Warm-up set. Tap to make it a working set' : 'Working set. Tap to mark as warm-up'}
             style={[styles.setNumWrap, set.warmup && styles.warmupBadge]}
           >
-            <Text style={[styles.setNum, set.warmup && { color: colors.sand }]}>
-              {set.warmup ? 'W' : ex.sets.slice(0, i + 1).filter((x) => !x.warmup).length}
-            </Text>
+            {(() => {
+              const k = ex.sets.slice(0, i + 1).filter((x) => !x.warmup).length; // working-set number
+              const up = !set.warmup && beats(set, previous?.sets[k - 1]);
+              return (
+                <Text style={[styles.setNum, set.warmup && { color: colors.sand }, up && { color: colors.latte }]}>
+                  {set.warmup ? 'W' : up ? `${k}↑` : k}
+                </Text>
+              );
+            })()}
           </Pressable>
           {cols.map((c) => (
             <NumInput key={c.key} value={c.get(set)} onCommit={(v) => setSet(i, { ...c.set(v), ...(autoDone && v.trim() ? { done: true } : {}) })} placeholder="—" />
           ))}
           <Pressable
             onPress={() => { tap(); setSet(i, { done: !set.done }); }}
+            accessibilityLabel={set.done ? 'Set done. Tap to undo' : 'Mark set done'}
             style={[styles.check, set.done && { backgroundColor: colors.olive, borderColor: colors.olive }]}
           >
             <Icon name="checkmark" size={16} color={set.done ? colors.cream : colors.textFaint} />
@@ -335,6 +356,7 @@ const styles = StyleSheet.create({
   meta: { fontFamily: fonts.body, fontSize: 12, color: colors.textFaint, marginTop: 2 },
   colHead: { fontFamily: fonts.bodyMedium, fontSize: 10, letterSpacing: 1.2, color: colors.textFaint, textAlign: 'center' },
   setRow: { paddingVertical: space(1.5), paddingHorizontal: space(1), borderRadius: radius.sm, marginTop: space(1) },
+  last: { fontFamily: fonts.body, fontSize: 12, color: colors.latteDeep, marginTop: 4 },
   setNumWrap: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   warmupBadge: { borderWidth: 1, borderColor: 'rgba(169,155,136,0.5)' },
   setNum: { fontFamily: fonts.bodyBold, color: colors.textMuted, textAlign: 'center' },

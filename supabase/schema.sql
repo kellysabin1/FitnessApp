@@ -94,6 +94,12 @@ do $$ begin
   alter table public.challenges add constraint challenges_mode_check check (mode in ('any', 'plan'));
 exception when duplicate_object then null; end $$;
 
+-- v4: optional goal / house rules written by the creator
+alter table public.challenges add column if not exists description text;
+do $$ begin
+  alter table public.challenges add constraint challenges_description_len check (char_length(description) <= 500);
+exception when duplicate_object then null; end $$;
+
 create table if not exists public.challenge_members (
   challenge_id uuid not null references public.challenges (id) on delete cascade,
   user_id uuid not null references public.profiles (id) on delete cascade,
@@ -149,10 +155,11 @@ create policy "leave challenge" on public.challenge_members
 -- joining/adding goes through the functions below
 
 drop function if exists public.create_challenge(text, date, date, boolean, boolean, boolean, boolean, integer, jsonb);
+drop function if exists public.create_challenge(text, date, date, boolean, boolean, boolean, boolean, integer, jsonb, text);
 create or replace function public.create_challenge(
   p_name text, p_starts_on date, p_ends_on date,
   p_score_workouts boolean, p_score_steps boolean, p_score_streaks boolean, p_score_plan boolean,
-  p_step_goal integer, p_plan jsonb, p_mode text default 'any'
+  p_step_goal integer, p_plan jsonb, p_mode text default 'any', p_description text default null
 ) returns public.challenges
 language plpgsql security definer set search_path = public as $$
 declare c challenges;
@@ -162,10 +169,11 @@ begin
     raise exception 'A plan-only challenge needs at least one plan workout';
   end if;
   insert into challenges (name, created_by, starts_on, ends_on, score_workouts, score_steps,
-                          score_streaks, score_plan, step_goal, plan, mode)
+                          score_streaks, score_plan, step_goal, plan, mode, description)
   values (p_name, auth.uid(), p_starts_on, p_ends_on, p_score_workouts, p_score_steps,
           -- in plan-only challenges the plan *is* the workout score, so no separate bonus
-          p_score_streaks, p_score_plan and p_mode <> 'plan', p_step_goal, coalesce(p_plan, '[]'::jsonb), p_mode)
+          p_score_streaks, p_score_plan and p_mode <> 'plan', p_step_goal, coalesce(p_plan, '[]'::jsonb), p_mode,
+          nullif(trim(p_description), ''))
   returning * into c;
   insert into challenge_members (challenge_id, user_id) values (c.id, auth.uid());
   insert into activity (challenge_id, user_id, kind, payload) values (c.id, auth.uid(), 'created', '{}'::jsonb);
@@ -317,11 +325,15 @@ alter table public.app_secrets enable row level security;
 --   streaks   +3 for every active day that follows another active day
 --             (active = a workout, or the step goal hit)
 --   plan      +5 bonus for each workout that completes an item of the group plan
+-- v4: also returns points per category (pts_*) and step-goal days, for the points breakdown.
+-- The return type changed, so the old version has to be dropped first.
+drop function if exists public.challenge_leaderboard(uuid);
 create or replace function public.challenge_leaderboard(p_challenge uuid)
 returns table (
   user_id uuid, username text, display_name text,
   workouts integer, steps bigint, streak_days integer, plan_done integer,
-  current_streak integer, points integer
+  current_streak integer, points integer,
+  pts_workouts integer, pts_steps integer, pts_streaks integer, pts_plan integer, goal_days integer
 )
 language plpgsql stable security definer set search_path = public as $$
 declare c challenges;
@@ -376,11 +388,12 @@ begin
            sum(r.steps)::bigint as steps,
            count(*) filter (where r.continues)::int as streak_days,
            sum(r.plan_n)::int as plan_done,
-           sum(least(r.n, 2) * case when c.score_workouts then 10 else 0 end
-               + case when c.score_steps then least(r.steps / 1000, 20)
-                        + case when r.steps >= c.step_goal then 5 else 0 end else 0 end
-               + case when c.score_streaks and r.continues then 3 else 0 end
-               + case when c.score_plan then r.plan_n * 5 else 0 end)::int as points
+           count(*) filter (where r.steps >= c.step_goal)::int as goal_days,
+           sum(least(r.n, 2) * case when c.score_workouts then 10 else 0 end)::int as pts_workouts,
+           sum(case when c.score_steps then least(r.steps / 1000, 20)
+                    + case when r.steps >= c.step_goal then 5 else 0 end else 0 end)::int as pts_steps,
+           sum(case when c.score_streaks and r.continues then 3 else 0 end)::int as pts_streaks,
+           sum(case when c.score_plan then r.plan_n * 5 else 0 end)::int as pts_plan
     from runs r group by r.user_id
   ),
   cur as (
@@ -399,19 +412,22 @@ begin
   )
   select m.user_id, m.username, m.display_name,
          coalesce(t.workouts, 0), coalesce(t.steps, 0), coalesce(t.streak_days, 0),
-         coalesce(t.plan_done, 0), coalesce(cur.current_streak, 0), coalesce(t.points, 0)
+         coalesce(t.plan_done, 0), coalesce(cur.current_streak, 0),
+         coalesce(t.pts_workouts + t.pts_steps + t.pts_streaks + t.pts_plan, 0),  -- total = sum of parts, always
+         coalesce(t.pts_workouts, 0), coalesce(t.pts_steps, 0), coalesce(t.pts_streaks, 0), coalesce(t.pts_plan, 0),
+         coalesce(t.goal_days, 0)
   from members m
   left join totals t on t.user_id = m.user_id
   left join cur on cur.user_id = m.user_id
-  order by coalesce(t.points, 0) desc, m.username;
+  order by coalesce(t.pts_workouts + t.pts_steps + t.pts_streaks + t.pts_plan, 0) desc, m.username;
 end $$;
 
 -- Only signed-in users may call these (Supabase grants functions to everyone by default).
-revoke execute on function public.create_challenge(text, date, date, boolean, boolean, boolean, boolean, integer, jsonb, text) from public, anon;
+revoke execute on function public.create_challenge(text, date, date, boolean, boolean, boolean, boolean, integer, jsonb, text, text) from public, anon;
 revoke execute on function public.join_challenge(text) from public, anon;
 revoke execute on function public.add_friend_to_challenge(uuid, uuid) from public, anon;
 revoke execute on function public.challenge_leaderboard(uuid) from public, anon;
-grant execute on function public.create_challenge(text, date, date, boolean, boolean, boolean, boolean, integer, jsonb, text) to authenticated;
+grant execute on function public.create_challenge(text, date, date, boolean, boolean, boolean, boolean, integer, jsonb, text, text) to authenticated;
 grant execute on function public.join_challenge(text) to authenticated;
 grant execute on function public.add_friend_to_challenge(uuid, uuid) to authenticated;
 grant execute on function public.challenge_leaderboard(uuid) to authenticated;

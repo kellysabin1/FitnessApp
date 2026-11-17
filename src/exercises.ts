@@ -1,8 +1,12 @@
+import { useStore } from './store';
+
 export type ExerciseCategory = 'strength' | 'pilates' | 'mobility' | 'cardio';
 export type ExerciseKind = 'weighted' | 'bodyweight' | 'timed' | 'distance';
 
 export interface ExerciseDef {
   name: string;
+  /** created by the user rather than built in */
+  custom?: boolean;
   category: ExerciseCategory;
   muscle: string;
   kind: ExerciseKind;
@@ -27,6 +31,14 @@ export const EXERCISES: ExerciseDef[] = [
   s('Cable Kickback', 'Glutes'), s('Hip Abduction Machine', 'Glutes'), s('Step-Up', 'Glutes'),
   s('Glute Bridge', 'Glutes'), s('Kas Glute Bridge', 'Glutes'), s('Standing Calf Raise', 'Calves'),
   s('Frog Pump', 'Glutes', 'bodyweight'), s('Good Morning', 'Hamstrings'),
+  // Single-leg / single-arm
+  s('Single-Leg Leg Press', 'Legs'), s('Single-Leg Romanian Deadlift', 'Hamstrings'), s('Single-Leg Hip Thrust', 'Glutes'),
+  s('Single-Leg Glute Bridge', 'Glutes', 'bodyweight'), s('Single-Leg Leg Extension', 'Quads'), s('Single-Leg Leg Curl', 'Hamstrings'),
+  s('Single-Leg Calf Raise', 'Calves'), s('Split Squat', 'Legs'), s('Lateral Lunge', 'Legs'), s('Curtsy Lunge', 'Glutes'),
+  s('Cossack Squat', 'Legs'), s('Skater Squat', 'Legs', 'bodyweight'), s('Box Pistol Squat', 'Legs', 'bodyweight'),
+  s('Single-Arm Cable Row', 'Back'), s('Single-Arm Lat Pulldown', 'Back'), s('Single-Arm Dumbbell Bench Press', 'Chest'),
+  s('Single-Arm Shoulder Press', 'Shoulders'), s('Single-Arm Landmine Press', 'Shoulders'), s('Single-Arm Cable Lateral Raise', 'Shoulders'),
+  s('Single-Arm Tricep Extension', 'Triceps'), s('Single-Arm Farmer Carry', 'Core', 'timed'),
   // Upper
   s('Lat Pulldown', 'Back'), s('Seated Cable Row', 'Back'), s('Single-Arm Dumbbell Row', 'Back'),
   s('Assisted Pull-Up', 'Back'), s('Pull-Up', 'Back', 'bodyweight'), s('Face Pull', 'Rear delts'),
@@ -61,7 +73,13 @@ export const CATEGORY_LABEL: Record<ExerciseCategory, string> = {
   cardio: 'Cardio',
 };
 
+/** Built-in exercises plus the ones this person created ("Your exercises"). */
+export function allExercises(): ExerciseDef[] {
+  const custom = useStore.getState().customExercises ?? [];
+  return [...EXERCISES, ...custom.map((c) => ({ ...c, custom: true }))];
+}
+
 export function findExercise(name: string): ExerciseDef | undefined {
   const n = name.trim().toLowerCase();
-  return EXERCISES.find((e) => e.name.toLowerCase() === n);
+  return allExercises().find((e) => e.name.toLowerCase() === n);
 }

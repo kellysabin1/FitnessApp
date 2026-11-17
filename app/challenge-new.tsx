@@ -25,6 +25,8 @@ export default function NewChallenge() {
   const [mode, setMode] = useState<ChallengeMode>('any');
   const [start, setStart] = useState<'today' | 'tomorrow' | 'monday'>('today');
   const [days, setDays] = useState(14);
+  const [customDays, setCustomDays] = useState<string | null>(null); // non-null = custom length
+  const [description, setDescription] = useState('');
   const [scoring, setScoring] = useState({ workouts: true, steps: true, streaks: true, plan: true });
   const [stepGoal, setStepGoal] = useState('8000');
   const [plan, setPlan] = useState<PlanItem[]>([]);
@@ -36,14 +38,18 @@ export default function NewChallenge() {
     if (start === 'tomorrow') d.setDate(d.getDate() + 1);
     return d;
   })();
+  const length = customDays !== null ? parseInt(customDays, 10) : days;
+  const lengthOk = Number.isInteger(length) && length >= 1 && length <= 120;
   const endDate = new Date(startDate);
-  endDate.setDate(endDate.getDate() + days - 1);
+  endDate.setDate(endDate.getDate() + (lengthOk ? length : 1) - 1);
 
   const toggle = (k: keyof typeof scoring) => setScoring((s) => ({ ...s, [k]: !s[k] }));
   const goal = parseInt(stepGoal, 10);
   const planOnly = mode === 'plan';
   const problem = !name.trim()
     ? 'Give your challenge a name.'
+    : !lengthOk
+      ? 'Length should be between 1 and 120 days.'
     : planOnly && plan.length === 0
       ? 'Add at least one workout to the plan.'
       : !(scoring.workouts || scoring.steps || scoring.streaks)
@@ -67,6 +73,7 @@ export default function NewChallenge() {
         scorePlan: !planOnly && scoring.plan && plan.length > 0,
         stepGoal: scoring.steps ? goal : 8000,
         plan,
+        description,
       });
       router.replace({ pathname: '/challenge/[id]', params: { id: c.id, fresh: '1' } });
     } catch (e) {
@@ -80,6 +87,14 @@ export default function NewChallenge() {
   return (
     <Screen padTop={false} contentStyle={{ gap: space(6), paddingBottom: space(16) }}>
       <Field label="Challenge name" value={name} onChangeText={setName} placeholder="e.g. November lift club" />
+
+      <Field
+        label="Goal or house rules (optional)"
+        value={description}
+        onChangeText={(t) => setDescription(t.slice(0, 500))}
+        placeholder="e.g. 4 workouts a week, 10k steps a day. Loser buys coffee."
+        multiline
+      />
 
       <View style={{ gap: space(2) }}>
         <Text style={label}>What kind of challenge?</Text>
@@ -112,9 +127,21 @@ export default function NewChallenge() {
 
       <Section label="Length">
         {LENGTHS.map((l) => (
-          <Chip key={l.days} label={l.label} active={days === l.days} onPress={() => setDays(l.days)} />
+          <Chip
+            key={l.days}
+            label={l.label}
+            active={customDays === null && days === l.days}
+            onPress={() => {
+              setDays(l.days);
+              setCustomDays(null);
+            }}
+          />
         ))}
+        <Chip label="Custom" active={customDays !== null} onPress={() => setCustomDays(customDays ?? String(days))} />
       </Section>
+      {customDays !== null ? (
+        <Field label="How many days?" value={customDays} onChangeText={setCustomDays} keyboardType="number-pad" suffix="days" />
+      ) : null}
       <Body muted style={{ fontSize: 13, marginTop: -space(3) }}>
         {fmt(startDate)} → {fmt(endDate)}
       </Body>

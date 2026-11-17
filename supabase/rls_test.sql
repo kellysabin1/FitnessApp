@@ -82,6 +82,9 @@ select username, workouts, steps, streak_days, plan_done, current_streak, points
 select create_challenge('Empty plan', current_date, current_date + 6, true, true, true, true, 8000, '[]', 'plan');
 \echo '--- T22 invalid mode (expect ERROR):'
 select create_challenge('Weird', current_date, current_date + 6, true, true, true, true, 8000, '[]', 'sometimes');
+\echo '--- T22b points breakdown adds up (expect 20 workouts + 14 steps + 3 streak + 5 plan = 42, 1 goal day):'
+select pts_workouts, pts_steps, pts_streaks, pts_plan, pts_workouts + pts_steps + pts_streaks + pts_plan = points as adds_up, goal_days
+from challenge_leaderboard(:'ch') where username = 'kelly';
 \echo '--- T23 any-workout challenge unchanged (expect kelly 42):'
 select points from challenge_leaderboard(:'ch') where username = 'kelly';
 
@@ -112,3 +115,9 @@ reset role;
 select (select count(*) from challenges where id = :'ch'), (select count(*) from challenge_members where challenge_id = :'ch'), (select count(*) from activity where challenge_id = :'ch');
 \echo '--- T31 Kellys workouts survive the challenge deletion (expect 3):'
 select count(*) from workouts where user_id = :'A';
+
+\echo '--- T32 challenge with a custom length (40 days) and a description (expect 40, text):'
+reset role; set role authenticated; select pg_temp.as_user(:'A');
+select (ends_on - starts_on + 1) as days, description from create_challenge('Custom', current_date, current_date + 39, true, true, true, true, 8000, '[]', 'any', '  Hit 4 workouts a week  ');
+\echo '--- T33 description over 500 characters (expect ERROR):'
+select create_challenge('Too long', current_date, current_date + 6, true, true, true, true, 8000, '[]', 'any', repeat('x', 501));

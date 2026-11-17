@@ -38,6 +38,8 @@ export default function ChallengeScreen() {
   const [showAdd, setShowAdd] = useState(false);
   const [toast, setToast] = useState<string | null>(fresh ? 'Challenge created — invite your friends below ✨' : null);
   const [err, setErr] = useState<string | null>(null);
+  const [openRow, setOpenRow] = useState<string | null>(null);
+  const [showRules, setShowRules] = useState(false);
 
   const load = useCallback(() => {
     if (!id) return;
@@ -121,6 +123,7 @@ export default function ChallengeScreen() {
         <Body muted style={{ fontSize: 13 }}>
           {c.mode === 'plan' ? 'Group plan challenge · only plan workouts count' : 'Any workout counts'}
         </Body>
+        {c.description ? <Body style={{ fontSize: 15, marginTop: space(3) }}>{c.description}</Body> : null}
         {toast ? <Body style={{ color: colors.latte, fontSize: 14, marginTop: space(2) }}>{toast}</Body> : null}
         {err ? <Body style={{ color: colors.sand, fontSize: 14, marginTop: space(2) }}>{err}</Body> : null}
 
@@ -170,7 +173,20 @@ export default function ChallengeScreen() {
         </Card>
 
         {/* Leaderboard */}
-        <SectionHeader title="Leaderboard" action={running && board.length > 1 ? 'Nudge everyone' : undefined} onAction={() => poke()} />
+        <Row style={{ justifyContent: 'space-between', marginTop: space(7), marginBottom: space(3) }}>
+          <Row gap={2}>
+            <H2>Leaderboard</H2>
+            <Pressable onPress={() => setShowRules((v) => !v)} hitSlop={10} accessibilityLabel="How scoring works">
+              <Icon name="information-circle-outline" size={20} color={colors.latte} />
+            </Pressable>
+          </Row>
+          {running && board.length > 1 ? (
+            <Pressable onPress={() => poke()} hitSlop={10}>
+              <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 13, color: colors.latte }}>Nudge everyone</Text>
+            </Pressable>
+          ) : null}
+        </Row>
+        {showRules ? <ScoringRules c={c} /> : null}
         <Card style={{ paddingVertical: space(2) }}>
           {board.map((r, i) => (
             <View key={r.user_id} style={{ paddingVertical: space(3), borderTopWidth: i ? 1 : 0, borderTopColor: colors.line }}>
@@ -181,14 +197,23 @@ export default function ChallengeScreen() {
                     name={r.user_id === me ? `${r.display_name || r.username} (you)` : r.display_name}
                     username={r.username}
                     right={
-                      <Text style={{ fontFamily: fonts.display, fontSize: 26, color: colors.cream }}>
-                        {r.points}
-                        <Text style={{ fontFamily: fonts.body, fontSize: 12, color: colors.textMuted }}> pts</Text>
-                      </Text>
+                      <Pressable
+                        onPress={() => setOpenRow((o) => (o === r.user_id ? null : r.user_id))}
+                        hitSlop={8}
+                        accessibilityLabel={`${r.points} points — show breakdown`}
+                        style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
+                      >
+                        <Text style={{ fontFamily: fonts.display, fontSize: 26, color: colors.cream }}>
+                          {r.points}
+                          <Text style={{ fontFamily: fonts.body, fontSize: 12, color: colors.textMuted }}> pts</Text>
+                        </Text>
+                        <Icon name={openRow === r.user_id ? 'chevron-up' : 'chevron-down'} size={14} color={colors.textMuted} />
+                      </Pressable>
                     }
                   />
                 </View>
               </Row>
+              {openRow === r.user_id ? <Breakdown r={r} c={c} /> : null}
               <Row gap={2} style={{ marginTop: space(2), marginLeft: 22 + space(3), flexWrap: 'wrap' }}>
                 {c.score_workouts ? <Stat label={`${r.workouts} ${c.mode === 'plan' ? 'plan workouts' : 'workouts'}`} /> : null}
                 {c.score_steps ? <Stat label={`${Number(r.steps).toLocaleString()} steps`} /> : null}
@@ -272,6 +297,62 @@ export default function ChallengeScreen() {
         )}
       </Screen>
     </>
+  );
+}
+
+/** Where someone's points came from — always sums to their total (computed in the database). */
+function Breakdown({ r, c }: { r: LeaderRow; c: Challenge }) {
+  const planOnly = c.mode === 'plan';
+  const rows = [
+    c.score_workouts && { label: planOnly ? 'Plan workouts' : 'Workouts', detail: `${r.workouts} × 10`, pts: r.pts_workouts },
+    c.score_steps && {
+      label: 'Steps',
+      detail: `${Number(r.steps).toLocaleString()} steps${r.goal_days ? ` · goal hit ${r.goal_days}×` : ''}`,
+      pts: r.pts_steps,
+    },
+    c.score_streaks && { label: 'Streaks', detail: `${r.streak_days} streak day${r.streak_days === 1 ? '' : 's'} × 3`, pts: r.pts_streaks },
+    !planOnly && c.score_plan && c.plan.length > 0 && { label: 'Plan bonus', detail: `${r.plan_done} × 5`, pts: r.pts_plan },
+  ].filter(Boolean) as { label: string; detail: string; pts: number }[];
+  return (
+    <View style={{ marginTop: space(3), marginLeft: 22 + space(3), padding: space(3), borderRadius: radius.md, backgroundColor: colors.bgRaised, gap: space(2) }}>
+      {rows.map((x) => (
+        <Row key={x.label} style={{ justifyContent: 'space-between' }}>
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 13, color: colors.cream }}>{x.label}</Text>
+            <Text style={{ fontFamily: fonts.body, fontSize: 12, color: colors.textFaint }}>{x.detail}</Text>
+          </View>
+          <Text style={{ fontFamily: fonts.bodyBold, fontSize: 14, color: colors.cream }}>{x.pts}</Text>
+        </Row>
+      ))}
+      <Divider />
+      <Row style={{ justifyContent: 'space-between' }}>
+        <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 13, color: colors.textMuted }}>Total</Text>
+        <Text style={{ fontFamily: fonts.bodyBold, fontSize: 14, color: colors.cream }}>{r.points}</Text>
+      </Row>
+    </View>
+  );
+}
+
+/** Plain-language scoring rules for this challenge's settings. */
+function ScoringRules({ c }: { c: Challenge }) {
+  const planOnly = c.mode === 'plan';
+  const lines = [
+    c.score_workouts && `${planOnly ? 'Each plan workout' : 'Each workout'} = 10 points (up to 2 a day).`,
+    c.score_steps && `Every 1,000 steps = 1 point (up to 20 a day), plus 5 bonus points on days you reach ${c.step_goal.toLocaleString()} steps.`,
+    c.score_streaks &&
+      `Streaks: 3 points for each active day in a row after the first. Active = ${planOnly ? 'a plan workout' : 'a workout'}${c.score_steps ? ' or hitting the step goal' : ''}.`,
+    !planOnly && c.score_plan && c.plan.length > 0 && 'Group plan bonus: +5 for each workout from the plan.',
+    planOnly && 'Only workouts from the group plan count toward points.',
+  ].filter(Boolean) as string[];
+  return (
+    <Card style={{ marginBottom: space(3), gap: space(2) }}>
+      <Eyebrow>How scoring works</Eyebrow>
+      {lines.map((l) => (
+        <Body key={l} muted style={{ fontSize: 13 }}>
+          • {l}
+        </Body>
+      ))}
+    </Card>
   );
 }
 

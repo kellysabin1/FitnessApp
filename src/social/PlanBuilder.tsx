@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { Body, Button, Card, Chip, Field, Icon, Row } from '../components/ui';
-import { EXERCISES } from '../exercises';
+import { allExercises } from '../exercises';
 import { TEMPLATES } from '../templates';
 import { colors, fonts, radius, space } from '../theme';
 import type { PlanItem } from './api';
@@ -93,6 +93,7 @@ function WorkoutEditor({
   const matches = useMemo(() => {
     const t = q.trim().toLowerCase();
     if (!t) return [];
+    const EXERCISES = allExercises();
     const found = EXERCISES.filter((e) => !exercises.includes(e.name) && (e.name.toLowerCase().includes(t) || e.muscle.toLowerCase().includes(t)))
       .slice(0, 8)
       .map((e) => e.name);
@@ -140,7 +141,7 @@ function WorkoutEditor({
             <Chip
               key={m}
               icon="add"
-              label={i === matches.length - 1 && !EXERCISES.some((e) => e.name === m) ? `Add “${m}”` : m}
+              label={i === matches.length - 1 && !allExercises().some((e) => e.name === m) ? `Add “${m}”` : m}
               onPress={() => {
                 setExercises((xs) => [...xs, m]);
                 setQ('');
