@@ -4,6 +4,8 @@ import { Body, Button, Card, Chip, Display, Divider, Eyebrow, Field, H2, Icon, I
 import { appleHealthSupported, connectAppleHealth } from '@/src/health/appleHealth';
 import { connectOura, OURA_CLIENT_ID } from '@/src/health/oura';
 import { syncHealth } from '@/src/health/sync';
+import { socialEnabled } from '@/src/config';
+import { router } from 'expo-router';
 import { testCoachConnection } from '@/src/api';
 import { Experience, Goal, GOAL_LABEL, useStore } from '@/src/store';
 import { colors, fonts, space } from '@/src/theme';
@@ -51,6 +53,23 @@ export default function You() {
       <Display style={{ marginTop: space(2) }}>
         {p.name || 'Your'} <Italic>{p.name ? 'era.' : 'profile.'}</Italic>
       </Display>
+
+      {socialEnabled() ? (
+        <Card tone="croc" style={{ marginTop: space(6) }} onPress={() => router.push('/account')}>
+          <Row style={{ justifyContent: 'space-between' }}>
+            <View style={{ flex: 1 }}>
+              <Eyebrow color={colors.latte}>Account</Eyebrow>
+              <Text style={styles.connTitle}>
+                {s.account?.username ? `@${s.account.username}` : s.account ? 'Finish your profile' : 'Create an account'}
+              </Text>
+              <Text style={styles.connSub}>
+                {s.account ? 'Friends, challenges and cloud backup' : 'Add friends, join challenges and back up your workouts'}
+              </Text>
+            </View>
+            <Icon name="chevron-forward" color={colors.textMuted} />
+          </Row>
+        </Card>
+      ) : null}
 
       {/* Coach first — it's the one thing that needs setting up */}
       <SectionHeader title="Coach" />

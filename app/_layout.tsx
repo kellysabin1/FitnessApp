@@ -10,6 +10,8 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import { useStore } from '@/src/store';
+import { restoreSession } from '@/src/social/api';
+import { registerServiceWorker } from '@/src/social/push';
 import { colors, fonts } from '@/src/theme';
 
 export { ErrorBoundary } from 'expo-router';
@@ -39,6 +41,11 @@ export default function RootLayout() {
   useEffect(() => {
     if (loaded && hydrated) SplashScreen.hideAsync();
   }, [loaded, hydrated]);
+  useEffect(() => {
+    if (!hydrated) return;
+    restoreSession().catch(() => {});
+    registerServiceWorker();
+  }, [hydrated]);
 
   if (!loaded || !hydrated) return null;
 
@@ -60,6 +67,13 @@ export default function RootLayout() {
         <Stack.Screen name="exercise-picker" options={{ presentation: 'modal', title: 'Add exercise' }} />
         <Stack.Screen name="log-body" options={{ presentation: 'modal', title: 'Log body' }} />
         <Stack.Screen name="log-past" options={{ presentation: 'modal', title: 'Log a past workout' }} />
+        <Stack.Screen name="log-steps" options={{ presentation: 'modal', title: 'Log steps' }} />
+        <Stack.Screen name="account" options={{ presentation: 'modal', title: 'Your account' }} />
+        <Stack.Screen name="add-friend" options={{ presentation: 'modal', title: 'Add a friend' }} />
+        <Stack.Screen name="challenge-new" options={{ presentation: 'modal', title: 'New challenge' }} />
+        <Stack.Screen name="join" options={{ presentation: 'modal', title: 'Join with code' }} />
+        <Stack.Screen name="challenge/[id]" options={{ title: '' }} />
+        <Stack.Screen name="join/[code]" options={{ headerShown: false }} />
       </Stack>
     </ThemeProvider>
   );

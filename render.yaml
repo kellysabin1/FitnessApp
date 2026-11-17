@@ -15,6 +15,13 @@ services:
         sync: false # Render asks you to paste this during setup
       - key: APP_TOKEN
         generateValue: true # Render makes a random password; copy it into the app
+      # Friends & challenges (Supabase) — see README "Friends & challenges setup"
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false # secret — paste from Supabase, never share
+      - key: APP_URL
+        sync: false # your rep-app address, e.g. https://rep-app-xxxx.onrender.com
 
   # The rep. web app — open on your iPhone in Safari, then Share → Add to Home Screen.
   - type: web
@@ -31,3 +38,10 @@ services:
         value: "22"
       - key: EXPO_NO_TELEMETRY
         value: "1"
+      # Public values (safe to be visible) — see README "Friends & challenges setup"
+      - key: EXPO_PUBLIC_SUPABASE_URL
+        sync: false
+      - key: EXPO_PUBLIC_SUPABASE_ANON_KEY
+        sync: false
+      - key: EXPO_PUBLIC_PUSH_SERVER_URL
+        sync: false # your rep-coach address

@@ -81,14 +81,10 @@ export default function Today() {
             </View>
           </Row>
           {!connected ? (
-            <Button
-              small
-              variant="secondary"
-              icon="link-outline"
-              title="Connect Apple Health or Oura"
-              style={{ marginTop: space(5) }}
-              onPress={() => router.push('/you')}
-            />
+            <Row gap={2} style={{ marginTop: space(5) }}>
+              <Button small variant="secondary" icon="footsteps-outline" title="Log steps" style={{ flex: 1 }} onPress={() => router.push('/log-steps')} />
+              <Button small variant="ghost" icon="link-outline" title="Connect" onPress={() => router.push('/you')} />
+            </Row>
           ) : null}
         </Card>
 

@@ -5,6 +5,7 @@ import { Body, Button, Card, Eyebrow, Icon, Row, Screen, tap } from '@/src/compo
 import { CATEGORY_LABEL } from '@/src/exercises';
 import { When, WhenPicker } from '@/src/components/WhenPicker';
 import { whenLabel, workoutDurationMin } from '@/src/stats';
+import { afterWorkoutSaved } from '@/src/social/after';
 import { SetEntry, useStore, WorkoutExercise } from '@/src/store';
 import { colors, fonts, radius, space } from '@/src/theme';
 import { inputToKg, kgToInput, Units, weightLabel } from '@/src/units';
@@ -124,7 +125,11 @@ export default function WorkoutScreen() {
         />
 
         {isDone ? (
-          <Button title={logged ? 'Save workout' : 'Done'} icon="checkmark" style={{ marginTop: space(6) }} onPress={() => router.back()} />
+          <Button title={logged ? 'Save workout' : 'Done'} icon="checkmark" style={{ marginTop: space(6) }} onPress={() => {
+              // logged-after-the-fact workouts get announced to challenges; edits to old ones just sync
+              afterWorkoutSaved(w.id, { announce: !!logged });
+              router.back();
+            }} />
         ) : null}
 
         {!isDone && !finishing && (
@@ -150,6 +155,7 @@ export default function WorkoutScreen() {
               title="Save workout"
               onPress={() => {
                 finishWorkout(w.id, mood);
+                afterWorkoutSaved(w.id, { announce: true });
                 router.back();
               }}
             />

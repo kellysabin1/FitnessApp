@@ -6,6 +6,7 @@ import { betaZodOutputFormat } from '@anthropic-ai/sdk/helpers/beta/zod';
 import express, { type NextFunction, type Request, type Response } from 'express';
 import { timingSafeEqual } from 'node:crypto';
 import { z } from 'zod';
+import { mountPushRoutes } from './push.js';
 
 const PORT = Number(process.env.PORT ?? 8787);
 const APP_TOKEN = process.env.APP_TOKEN ?? '';
@@ -34,6 +35,9 @@ app.use((req, res, next) => {
 app.get('/health', (_req, res) => {
   res.json({ ok: true });
 });
+
+// Friend notifications use the person's rep. login instead of the coach password.
+mountPushRoutes(app);
 
 function requireToken(req: Request, res: Response, next: NextFunction) {
   const got = Buffer.from((req.headers.authorization ?? '').replace(/^Bearer\s+/i, ''));

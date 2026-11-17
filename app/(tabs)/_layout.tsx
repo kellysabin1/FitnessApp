@@ -34,6 +34,7 @@ export default function TabLayout() {
       <Tabs.Screen name="index" options={tab('Today', 'sparkles-outline', 'sparkles')} />
       <Tabs.Screen name="train" options={tab('Train', 'barbell-outline', 'barbell')} />
       <Tabs.Screen name="progress" options={tab('Progress', 'analytics-outline', 'analytics')} />
+      <Tabs.Screen name="friends" options={tab('Friends', 'people-outline', 'people')} />
       <Tabs.Screen name="coach" options={tab('Coach', 'chatbubble-ellipses-outline', 'chatbubble-ellipses')} />
       <Tabs.Screen name="you" options={tab('You', 'person-circle-outline', 'person-circle')} />
     </Tabs>

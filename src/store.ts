@@ -67,6 +67,17 @@ export interface Workout {
   mood?: number; // 1–5 how it felt
   /** true when entered after the fact rather than live */
   logged?: boolean;
+  /** title of the challenge-plan workout this completes, if started from a plan */
+  planItem?: string;
+  /** last local edit (ISO) — used to sync changes */
+  updatedAt?: string;
+}
+
+export interface Account {
+  userId: string;
+  email: string;
+  username?: string;
+  displayName?: string;
 }
 
 export interface BodyEntry {
@@ -124,18 +135,26 @@ interface State {
   appleHealthEnabled: boolean;
   oura?: OuraAuth;
   server: { url: string; token: string };
+  /** Signed-in friends & challenges account (undefined when signed out). */
+  account?: Account;
+  /** Last successful upload of workouts/steps (ISO). */
+  lastSyncAt?: string;
+  /** Workout ids deleted locally that still need deleting from the account. */
+  pendingDeletes: string[];
   /** Result of the last coach connection check. */
   coachStatus?: 'ok' | 'unauthorized' | 'unreachable';
 
   // actions
   set: (patch: Partial<State>) => void;
   updateProfile: (patch: Partial<Profile>) => void;
-  startWorkout: (title?: string) => string;
+  startWorkout: (title?: string, planItem?: string) => string;
   /** Create an already-finished workout that happened in the past. */
   logPastWorkout: (title: string, startedAt: Date, durationMin: number) => string;
   updateWorkout: (id: string, fn: (w: Workout) => Workout) => void;
   finishWorkout: (id: string, mood?: number) => void;
   deleteWorkout: (id: string) => void;
+  /** Add/replace workouts pulled from the account (cloud restore). */
+  mergeWorkouts: (ws: Workout[]) => void;
   addBody: (e: Omit<BodyEntry, 'id'>) => void;
   deleteBody: (id: string) => void;
   upsertHealth: (days: HealthDay[]) => void;
@@ -174,6 +193,9 @@ const initial = {
   appleHealthEnabled: false,
   oura: undefined,
   coachStatus: undefined,
+  account: undefined,
+  lastSyncAt: undefined,
+  pendingDeletes: [] as string[],
   server: {
     url: process.env.EXPO_PUBLIC_COACH_URL ?? '',
     token: process.env.EXPO_PUBLIC_COACH_TOKEN ?? '',
@@ -186,13 +208,15 @@ export const useStore = create<State>()(
       ...initial,
       set: (patch) => set(patch),
       updateProfile: (patch) => set({ profile: { ...get().profile, ...patch } }),
-      startWorkout: (title) => {
+      startWorkout: (title, planItem) => {
         const id = uid();
         const w: Workout = {
           id,
           title: title || defaultWorkoutTitle(),
           startedAt: new Date().toISOString(),
           exercises: [],
+          planItem,
+          updatedAt: new Date().toISOString(),
         };
         set({ workouts: [w, ...get().workouts] });
         return id;
@@ -206,19 +230,33 @@ export const useStore = create<State>()(
           finishedAt: new Date(+startedAt + durationMin * 60000).toISOString(),
           exercises: [],
           logged: true,
+          updatedAt: new Date().toISOString(),
         };
         set({ workouts: sortWorkouts([w, ...get().workouts]) });
         return id;
       },
       updateWorkout: (id, fn) =>
-        set({ workouts: sortWorkouts(get().workouts.map((w) => (w.id === id ? fn(w) : w))) }),
+        set({
+          workouts: sortWorkouts(
+            get().workouts.map((w) => (w.id === id ? { ...fn(w), updatedAt: new Date().toISOString() } : w)),
+          ),
+        }),
       finishWorkout: (id, mood) =>
         set({
           workouts: get().workouts.map((w) =>
-            w.id === id ? { ...w, finishedAt: new Date().toISOString(), mood } : w,
+            w.id === id ? { ...w, finishedAt: new Date().toISOString(), mood, updatedAt: new Date().toISOString() } : w,
           ),
         }),
-      deleteWorkout: (id) => set({ workouts: get().workouts.filter((w) => w.id !== id) }),
+      mergeWorkouts: (ws) => {
+        const byId = new Map(get().workouts.map((w) => [w.id, w]));
+        for (const w of ws) byId.set(w.id, w);
+        set({ workouts: sortWorkouts([...byId.values()]) });
+      },
+      deleteWorkout: (id) =>
+        set({
+          workouts: get().workouts.filter((w) => w.id !== id),
+          pendingDeletes: get().account ? [...get().pendingDeletes, id] : get().pendingDeletes,
+        }),
       addBody: (e) => {
         // one entry per day: merge into an existing entry for the same date
         const existing = get().body.find((b) => b.date === e.date);

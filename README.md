@@ -18,6 +18,30 @@ A moody workout tracker in bone, espresso, burnt olive and oxide with a built-in
 
 Everything is stored on your phone. The only things that leave it are what's sent to your own coach server when you use the AI coach, and the Oura sign-in.
 
+## Friends & challenges
+
+- **Accounts** (email + password) with an @username; signing in also backs up your workouts.
+- **Friends**: search by @username, send/accept requests.
+- **Challenges**: pick a length, what earns points (workouts, daily steps, streaks, a shared group plan),
+  invite by link/code or add friends directly. Leaderboard, activity feed with reactions, and nudges.
+- **Notifications** when a friend finishes a workout or nudges you — Web Push from the home-screen app
+  (iPhone iOS 16.4+), no Apple Developer account needed.
+
+Scoring: workout +10 (max 2 a day) · 1,000 steps +1 (max 20 a day) and +5 on step-goal days ·
++3 for each active day that follows another · +5 for each group-plan workout.
+
+Privacy: people only see your workouts and steps once you're in a challenge together. Everything is
+enforced in the database (`supabase/schema.sql`); `supabase/rls_test.sql` checks it.
+
+### Friends & challenges setup
+
+1. Create a Supabase project. In **Authentication → Providers → Email**, turn **Confirm email** off.
+2. **SQL Editor → New query**: paste all of `supabase/schema.sql` → **Run**.
+3. Render → **rep-coach** → Environment: add `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` (secret) and
+   `APP_URL` (your rep-app address).
+4. Render → **rep-app** → Environment: add `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY`
+   and `EXPO_PUBLIC_PUSH_SERVER_URL` (your rep-coach address), then redeploy.
+
 ## Project layout
 
 ```
@@ -30,7 +54,8 @@ src/
   health/            Apple Health, Oura, sync
   components/        UI kit + charts
   theme.ts           colours & fonts
-server/              tiny Node server that holds your Claude key + Oura secret
+server/              tiny Node server: AI coach, Oura sign-in, friend notifications
+supabase/            database schema + privacy tests for friends & challenges
 assets/textures/     croc.jpg, tortoise.jpg, satin.jpg (replace any file to change that card texture)
 ```
 
