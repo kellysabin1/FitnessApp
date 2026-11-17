@@ -1,7 +1,7 @@
 # rep. — backlog
 
 Two parts: **Part 1 — Hardening** (security, compliance, delivery; REP-1…12) and
-**Part 2 — Product** (features from the product owner's list; REP-13…29, drafts awaiting detail).
+**Part 2 — Product** (features from the product owner's list; REP-13…28, drafts awaiting detail).
 
 # Part 1 — Hardening
 
