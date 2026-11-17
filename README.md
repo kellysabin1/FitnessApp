@@ -1,5 +1,7 @@
 # rep.
 
+New here? Read the plain-English guide: [docs/HOW-IT-WORKS.md](docs/HOW-IT-WORKS.md)
+
 A moody workout tracker in bone, espresso, burnt olive and oxide with a built-in AI personal trainer.
 
 | Today | Train | Progress | Coach |
@@ -32,7 +34,8 @@ Everything is stored on your phone. The only things that leave it are what's sen
 Scoring: workout +10 (max 2 a day) · 1,000 steps +1 (max 20 a day) and +5 on step-goal days ·
 +3 for each active day that follows another · +5 for each group-plan workout.
 
-Privacy: people only see your workouts and steps once you're in a challenge together. Everything is
+Privacy: people only see your workouts and steps when you're in a challenge together, and only from
+inside that challenge's dates. Everything is
 enforced in the database (`supabase/schema.sql`); `supabase/rls_test.sql` checks it.
 
 ### Friends & challenges setup

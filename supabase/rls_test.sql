@@ -39,11 +39,15 @@ insert into workouts(user_id, id, title, started_at, finished_at, local_day, dur
 values (:'A', 'w1', 'Glutes & hamstrings', now() - interval '1 day', now() - interval '1 day' + interval '45 min', current_date - 1, 45, 'Glutes & hamstrings'),
        (:'A', 'w2', 'Upper', now(), now() + interval '40 min', current_date, 40, null);
 insert into daily_steps(user_id, day, steps) values (:'A', current_date - 1, 9000);
+-- an old workout + steps from before the challenge started (should stay private)
+insert into workouts(user_id, id, title, started_at, finished_at, local_day, duration_min)
+values (:'A', 'old', 'Before the challenge', now() - interval '30 days', now() - interval '30 days' + interval '30 min', current_date - 30, 30);
+insert into daily_steps(user_id, day, steps) values (:'A', current_date - 30, 12000);
 \echo '--- T9 stranger cannot write a workout as Kelly (expect ERROR):'
 select pg_temp.as_user(:'C'); insert into workouts(user_id, id, started_at, finished_at, local_day) values (:'A', 'x', now(), now(), current_date);
 \echo '--- T10 stranger sees 0 of Kellys workouts / steps:'
 select count(*) from workouts; select count(*) from daily_steps;
-\echo '--- T11 challenge-mate sees 2 workouts / 1 steps row:'
+\echo '--- T11 challenge-mate sees only the 2 in-challenge workouts / 1 steps row (not the one from 30 days ago):'
 select pg_temp.as_user(:'B'); select count(*) from workouts; select count(*) from daily_steps;
 \echo '--- T12 stranger cannot post to the feed (expect ERROR):'
 select pg_temp.as_user(:'C'); insert into activity(challenge_id, user_id, kind) values (:'ch', :'C', 'workout');
@@ -51,7 +55,7 @@ select pg_temp.as_user(:'C'); insert into activity(challenge_id, user_id, kind) 
 select pg_temp.as_user(:'B'); insert into activity(challenge_id, user_id, kind, payload) values (:'ch', :'B', 'workout', '{"title":"Leg day"}') returning id \gset
 insert into activity(challenge_id, user_id, kind) values (:'ch', :'B', 'joined');
 select pg_temp.as_user(:'A'); insert into reactions(activity_id, user_id, emoji) values (:id, :'A', '🔥'); select count(*) from reactions;
-\echo '--- T14 stranger joins by code, then can see challenge and Kellys workouts:'
+\echo '--- T14 stranger joins by code, then sees the challenge and only the 2 in-challenge workouts:'
 select pg_temp.as_user(:'A'); select invite_code as code from challenges \gset
 select pg_temp.as_user(:'C'); select join_challenge(lower(:'code')) is not null; select count(*) from challenges; select count(*) from workouts;
 \echo '--- T15 wrong code (expect ERROR):'
@@ -80,3 +84,6 @@ select create_challenge('Empty plan', current_date, current_date + 6, true, true
 select create_challenge('Weird', current_date, current_date + 6, true, true, true, true, 8000, '[]', 'sometimes');
 \echo '--- T23 any-workout challenge unchanged (expect kelly 42):'
 select points from challenge_leaderboard(:'ch') where username = 'kelly';
+
+\echo '--- T24 Kelly still sees all 3 of her own workouts:'
+select pg_temp.as_user(:'A'); select count(*) from workouts where user_id = :'A';

@@ -109,6 +109,19 @@ language sql stable security definer set search_path = public as $$
   );
 $$;
 
+-- true when `viewer` and `owner` share a challenge that was running on day `d`
+-- (challenge-mates only see each other's workouts/steps from inside the challenge dates)
+create or replace function public.shared_on_day(viewer uuid, owner uuid, d date) returns boolean
+language sql stable security definer set search_path = public as $$
+  select exists (
+    select 1 from challenge_members m1
+    join challenge_members m2 on m1.challenge_id = m2.challenge_id
+    join challenges c on c.id = m1.challenge_id
+    where m1.user_id = viewer and m2.user_id = owner
+      and d between c.starts_on and c.ends_on
+  );
+$$;
+
 drop policy if exists "members see challenge" on public.challenges;
 create policy "members see challenge" on public.challenges
   for select to authenticated using (public.is_member(id));
@@ -198,7 +211,7 @@ alter table public.workouts enable row level security;
 
 drop policy if exists "see own or challenge-mates workouts" on public.workouts;
 create policy "see own or challenge-mates workouts" on public.workouts
-  for select to authenticated using (user_id = auth.uid() or public.share_challenge(auth.uid(), user_id));
+  for select to authenticated using (user_id = auth.uid() or public.shared_on_day(auth.uid(), user_id, local_day));
 drop policy if exists "write own workouts" on public.workouts;
 create policy "write own workouts" on public.workouts
   for all to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
@@ -215,7 +228,7 @@ alter table public.daily_steps enable row level security;
 
 drop policy if exists "see own or challenge-mates steps" on public.daily_steps;
 create policy "see own or challenge-mates steps" on public.daily_steps
-  for select to authenticated using (user_id = auth.uid() or public.share_challenge(auth.uid(), user_id));
+  for select to authenticated using (user_id = auth.uid() or public.shared_on_day(auth.uid(), user_id, day));
 drop policy if exists "write own steps" on public.daily_steps;
 create policy "write own steps" on public.daily_steps
   for all to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
