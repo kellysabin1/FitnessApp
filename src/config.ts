@@ -14,4 +14,4 @@ export const APP_URL = process.env.EXPO_PUBLIC_APP_URL ?? '';
  * The rep. server that sends notifications (same server as the AI coach).
  * Built into the app so friends get notifications even without the coach password.
  */
-export const PUSH_SERVER_URL = process.env.EXPO_PUBLIC_PUSH_SERVER_URL ?? '';
+export const PUSH_SERVER_URL = process.env.EXPO_PUBLIC_PUSH_SERVER_URL || 'https://rep-coach.onrender.com';
