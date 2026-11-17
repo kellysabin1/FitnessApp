@@ -63,5 +63,20 @@ select pg_temp.as_user(:'A'); select username, workouts, steps, streak_days, pla
 \echo '--- T18 non-member leaderboard (expect ERROR):'
 reset role; set role authenticated; select pg_temp.as_user('00000000-0000-0000-0000-0000000000ee');
 select * from challenge_leaderboard(:'ch');
-\echo '--- T19 anonymous (signed out) sees no profiles (expect permission ERROR or 0):'
+\echo '--- T19 anonymous (signed out) sees no profiles and cannot call functions (expect 2 permission ERRORs):'
 reset role; set role anon; select count(*) from profiles;
+select join_challenge('ZZZZZZ');
+
+reset role; set role authenticated;
+\echo '--- T20 plan-only challenge: only the plan workout counts (expect kelly 24 pts: 1 workout, 9000 steps, 0 streak days, 1 plan, current streak 1):'
+select pg_temp.as_user(:'A');
+select id as pch from create_challenge('Plan only', current_date - 1, current_date + 13, true, true, true, true, 8000,
+  '[{"title":"Glutes & hamstrings","exercises":["Hip Thrust"]}]', 'plan') \gset
+select score_plan from challenges where id = :'pch';
+select username, workouts, steps, streak_days, plan_done, current_streak, points from challenge_leaderboard(:'pch') where username = 'kelly';
+\echo '--- T21 plan-only challenge with no plan (expect ERROR):'
+select create_challenge('Empty plan', current_date, current_date + 6, true, true, true, true, 8000, '[]', 'plan');
+\echo '--- T22 invalid mode (expect ERROR):'
+select create_challenge('Weird', current_date, current_date + 6, true, true, true, true, 8000, '[]', 'sometimes');
+\echo '--- T23 any-workout challenge unchanged (expect kelly 42):'
+select points from challenge_leaderboard(:'ch') where username = 'kelly';

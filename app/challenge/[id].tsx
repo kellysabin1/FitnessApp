@@ -106,6 +106,9 @@ export default function ChallengeScreen() {
       <Screen padTop={false}>
         <Eyebrow>{status}</Eyebrow>
         <H2 style={{ fontSize: 34, marginTop: space(1) }}>{c.name}</H2>
+        <Body muted style={{ fontSize: 13 }}>
+          {c.mode === 'plan' ? 'Group plan challenge · only plan workouts count' : 'Any workout counts'}
+        </Body>
         {toast ? <Body style={{ color: colors.latte, fontSize: 14, marginTop: space(2) }}>{toast}</Body> : null}
         {err ? <Body style={{ color: colors.sand, fontSize: 14, marginTop: space(2) }}>{err}</Body> : null}
 
@@ -175,10 +178,10 @@ export default function ChallengeScreen() {
                 </View>
               </Row>
               <Row gap={2} style={{ marginTop: space(2), marginLeft: 22 + space(3), flexWrap: 'wrap' }}>
-                {c.score_workouts ? <Stat label={`${r.workouts} workouts`} /> : null}
+                {c.score_workouts ? <Stat label={`${r.workouts} ${c.mode === 'plan' ? 'plan workouts' : 'workouts'}`} /> : null}
                 {c.score_steps ? <Stat label={`${Number(r.steps).toLocaleString()} steps`} /> : null}
                 {c.score_streaks ? <Stat label={`${r.current_streak}-day streak`} /> : null}
-                {c.score_plan && c.plan.length ? <Stat label={`${r.plan_done} plan`} /> : null}
+                {c.mode !== 'plan' && c.score_plan && c.plan.length ? <Stat label={`${r.plan_done} plan`} /> : null}
                 {running && r.user_id !== me ? (
                   <Pressable onPress={() => poke(r.user_id)} hitSlop={8}>
                     <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 12, color: colors.latte }}>Nudge 👋</Text>
@@ -210,7 +213,7 @@ export default function ChallengeScreen() {
         {/* Shared plan */}
         {c.plan.length ? (
           <>
-            <SectionHeader title="Group plan" />
+            <SectionHeader title={c.mode === 'plan' ? 'The plan · only these count' : 'Group plan · +5 bonus'} />
             <View style={{ gap: space(3) }}>
               {c.plan.map((p) => {
                 const done = donePlan(p.title);

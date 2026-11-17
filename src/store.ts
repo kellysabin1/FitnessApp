@@ -149,7 +149,7 @@ interface State {
   updateProfile: (patch: Partial<Profile>) => void;
   startWorkout: (title?: string, planItem?: string) => string;
   /** Create an already-finished workout that happened in the past. */
-  logPastWorkout: (title: string, startedAt: Date, durationMin: number) => string;
+  logPastWorkout: (title: string, startedAt: Date, durationMin: number, planItem?: string) => string;
   updateWorkout: (id: string, fn: (w: Workout) => Workout) => void;
   finishWorkout: (id: string, mood?: number) => void;
   deleteWorkout: (id: string) => void;
@@ -221,7 +221,7 @@ export const useStore = create<State>()(
         set({ workouts: [w, ...get().workouts] });
         return id;
       },
-      logPastWorkout: (title, startedAt, durationMin) => {
+      logPastWorkout: (title, startedAt, durationMin, planItem) => {
         const id = uid();
         const w: Workout = {
           id,
@@ -230,6 +230,7 @@ export const useStore = create<State>()(
           finishedAt: new Date(+startedAt + durationMin * 60000).toISOString(),
           exercises: [],
           logged: true,
+          planItem,
           updatedAt: new Date().toISOString(),
         };
         set({ workouts: sortWorkouts([w, ...get().workouts]) });

@@ -253,6 +253,15 @@ export interface Challenge {
   score_plan: boolean;
   step_goal: number;
   plan: PlanItem[];
+  /** 'any' = every workout counts · 'plan' = only group-plan workouts count */
+  mode: ChallengeMode;
+}
+
+export type ChallengeMode = 'any' | 'plan';
+
+/** Does this workout count toward (and get posted to) this challenge? */
+export function workoutCounts(c: Pick<Challenge, 'mode' | 'plan'>, planItem?: string) {
+  return c.mode !== 'plan' || (!!planItem && c.plan.some((p) => p.title === planItem));
 }
 
 export interface LeaderRow {
@@ -301,6 +310,7 @@ export async function createChallenge(input: {
   scorePlan: boolean;
   stepGoal: number;
   plan: PlanItem[];
+  mode: ChallengeMode;
 }): Promise<Challenge> {
   await syncUp().catch(() => {});
   const { data, error } = await requireSb().rpc('create_challenge', {
@@ -313,6 +323,7 @@ export async function createChallenge(input: {
     p_score_plan: input.scorePlan,
     p_step_goal: input.stepGoal,
     p_plan: input.plan,
+    p_mode: input.mode,
   });
   if (error) throw new Error(friendly(error));
   return data as Challenge;
@@ -385,7 +396,9 @@ export async function shareFinishedWorkout(w: Workout): Promise<number[]> {
   if (!c || !acct?.username || !w.finishedAt) return [];
   await syncUp();
   const day = todayKey(new Date(w.startedAt));
-  const running = (await myChallenges()).filter((ch) => ch.starts_on <= day && day <= ch.ends_on);
+  const running = (await myChallenges()).filter(
+    (ch) => ch.starts_on <= day && day <= ch.ends_on && workoutCounts(ch, w.planItem),
+  );
   if (!running.length) return [];
   const payload = {
     workout_id: w.id,
@@ -401,4 +414,21 @@ export async function shareFinishedWorkout(w: Workout): Promise<number[]> {
     .select('id');
   if (error) throw new Error(friendly(error));
   return (data ?? []).map((r: { id: number }) => r.id);
+}
+
+/** Plan workouts from challenges running on a given day (for tagging a logged workout). */
+export async function runningPlanItems(day: string): Promise<{ challenge: string; item: PlanItem }[]> {
+  if (!sb() || !useStore.getState().account?.username) return [];
+  const list = await myChallenges();
+  const out: { challenge: string; item: PlanItem }[] = [];
+  const seen = new Set<string>();
+  for (const c of list) {
+    if (c.starts_on > day || day > c.ends_on) continue;
+    for (const item of c.plan) {
+      if (seen.has(item.title)) continue;
+      seen.add(item.title);
+      out.push({ challenge: c.name, item });
+    }
+  }
+  return out;
 }

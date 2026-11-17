@@ -1,11 +1,11 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Text, View } from 'react-native';
-import { Body, Button, Chip, Field, Row, Screen } from '@/src/components/ui';
-import { createChallenge } from '@/src/social/api';
+import { Pressable, Text, View } from 'react-native';
+import { Body, Button, Chip, Field, Icon, IconName, Row, Screen } from '@/src/components/ui';
+import { type ChallengeMode, createChallenge, type PlanItem } from '@/src/social/api';
+import { PlanBuilder } from '@/src/social/PlanBuilder';
 import { todayKey } from '@/src/store';
-import { TEMPLATES } from '@/src/templates';
-import { colors, fonts, space } from '@/src/theme';
+import { colors, fonts, radius, space } from '@/src/theme';
 
 const LENGTHS = [
   { label: '1 week', days: 7 },
@@ -22,11 +22,12 @@ function nextMonday() {
 
 export default function NewChallenge() {
   const [name, setName] = useState('');
+  const [mode, setMode] = useState<ChallengeMode>('any');
   const [start, setStart] = useState<'today' | 'tomorrow' | 'monday'>('today');
   const [days, setDays] = useState(14);
   const [scoring, setScoring] = useState({ workouts: true, steps: true, streaks: true, plan: true });
   const [stepGoal, setStepGoal] = useState('8000');
-  const [plan, setPlan] = useState<string[]>([]);
+  const [plan, setPlan] = useState<PlanItem[]>([]);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
@@ -39,9 +40,17 @@ export default function NewChallenge() {
   endDate.setDate(endDate.getDate() + days - 1);
 
   const toggle = (k: keyof typeof scoring) => setScoring((s) => ({ ...s, [k]: !s[k] }));
-  const togglePlan = (t: string) => setPlan((p) => (p.includes(t) ? p.filter((x) => x !== t) : [...p, t]));
   const goal = parseInt(stepGoal, 10);
-  const valid = name.trim().length > 0 && Object.values(scoring).some(Boolean) && (!scoring.steps || (goal >= 1000 && goal <= 50000));
+  const planOnly = mode === 'plan';
+  const problem = !name.trim()
+    ? 'Give your challenge a name.'
+    : planOnly && plan.length === 0
+      ? 'Add at least one workout to the plan.'
+      : !(scoring.workouts || scoring.steps || scoring.streaks)
+        ? 'Pick at least one way to earn points.'
+        : scoring.steps && !(goal >= 1000 && goal <= 50000)
+          ? 'Step goal should be between 1,000 and 50,000.'
+          : null;
 
   const create = async () => {
     setBusy(true);
@@ -49,14 +58,15 @@ export default function NewChallenge() {
     try {
       const c = await createChallenge({
         name,
+        mode,
         startsOn: todayKey(startDate),
         endsOn: todayKey(endDate),
         scoreWorkouts: scoring.workouts,
         scoreSteps: scoring.steps,
         scoreStreaks: scoring.streaks,
-        scorePlan: scoring.plan && plan.length > 0,
+        scorePlan: !planOnly && scoring.plan && plan.length > 0,
         stepGoal: scoring.steps ? goal : 8000,
-        plan: plan.map((t) => ({ title: t, exercises: TEMPLATES.find((x) => x.title === t)?.exercises ?? [] })),
+        plan,
       });
       router.replace({ pathname: '/challenge/[id]', params: { id: c.id, fresh: '1' } });
     } catch (e) {
@@ -69,7 +79,30 @@ export default function NewChallenge() {
 
   return (
     <Screen padTop={false} contentStyle={{ gap: space(6), paddingBottom: space(16) }}>
-      <Field label="Challenge name" value={name} onChangeText={setName} placeholder="e.g. Glute girls November" autoFocus />
+      <Field label="Challenge name" value={name} onChangeText={setName} placeholder="e.g. Glute girls November" />
+
+      <View style={{ gap: space(2) }}>
+        <Text style={label}>What kind of challenge?</Text>
+        <ModeCard
+          icon="flash-outline"
+          title="Any workout"
+          text="Every workout anyone logs counts. You can still add a shared plan for bonus points."
+          active={mode === 'any'}
+          onPress={() => setMode('any')}
+        />
+        <ModeCard
+          icon="list-outline"
+          title="Group plan"
+          text="Everyone follows the same plan. Only the plan’s workouts count."
+          active={mode === 'plan'}
+          onPress={() => setMode('plan')}
+        />
+      </View>
+
+      <View style={{ gap: space(2) }}>
+        <Text style={label}>{planOnly ? 'The plan — only these workouts count' : 'Shared plan (optional, +5 bonus each)'}</Text>
+        <PlanBuilder value={plan} onChange={setPlan} />
+      </View>
 
       <Section label="Starts">
         <Chip label="Today" active={start === 'today'} onPress={() => setStart('today')} />
@@ -87,45 +120,60 @@ export default function NewChallenge() {
       </Body>
 
       <Section label="What earns points">
-        <Chip label="Workouts" active={scoring.workouts} onPress={() => toggle('workouts')} />
+        <Chip label={planOnly ? 'Plan workouts' : 'Workouts'} active={scoring.workouts} onPress={() => toggle('workouts')} />
         <Chip label="Daily steps" active={scoring.steps} onPress={() => toggle('steps')} />
         <Chip label="Streaks" active={scoring.streaks} onPress={() => toggle('streaks')} />
-        <Chip label="Group plan" active={scoring.plan} onPress={() => toggle('plan')} />
+        {!planOnly && plan.length ? <Chip label="Plan bonus" active={scoring.plan} onPress={() => toggle('plan')} /> : null}
       </Section>
       <Body muted style={{ fontSize: 13, marginTop: -space(3) }}>
-        Workout +10 · 1,000 steps +1 (step goal +5) · each streak day +3 · plan workout +5
+        {planOnly ? 'Plan workout +10' : 'Workout +10'} · 1,000 steps +1 (step goal +5) · each streak day +3
+        {!planOnly && plan.length && scoring.plan ? ' · plan workout +5 bonus' : ''}
       </Body>
 
       {scoring.steps ? (
         <Field label="Daily step goal" value={stepGoal} onChangeText={setStepGoal} keyboardType="number-pad" suffix="steps" />
       ) : null}
 
-      {scoring.plan ? (
-        <>
-          <Section label="Group plan — everyone does these">
-            {TEMPLATES.map((t) => (
-              <Chip key={t.title} label={t.title} active={plan.includes(t.title)} onPress={() => togglePlan(t.title)} />
-            ))}
-          </Section>
-          <Body muted style={{ fontSize: 13, marginTop: -space(3) }}>
-            {plan.length ? `${plan.length} workout${plan.length > 1 ? 's' : ''} in the plan.` : 'Pick the workouts the whole group will do.'}
-          </Body>
-        </>
-      ) : null}
-
-      <Button title="Create challenge" icon="trophy-outline" loading={busy} disabled={!valid} onPress={create} />
+      <Button title="Create challenge" icon="trophy-outline" loading={busy} disabled={!!problem} onPress={create} />
+      {problem && name.trim() ? <Body style={{ color: colors.sand, fontSize: 13, marginTop: -space(3) }}>{problem}</Body> : null}
       {err ? <Body style={{ color: colors.sand, fontSize: 14 }}>{err}</Body> : null}
     </Screen>
   );
 }
 
-function Section({ label, children }: { label: string; children: React.ReactNode }) {
+function ModeCard({ icon, title, text, active, onPress }: { icon: IconName; title: string; text: string; active: boolean; onPress: () => void }) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={{
+        flexDirection: 'row',
+        gap: space(3),
+        padding: space(4),
+        borderRadius: radius.lg,
+        borderWidth: 1,
+        borderColor: active ? 'rgba(216,193,166,0.45)' : colors.line,
+        backgroundColor: active ? colors.burgundy : colors.card,
+      }}
+    >
+      <Icon name={icon} size={20} color={active ? colors.cream : colors.textMuted} />
+      <View style={{ flex: 1 }}>
+        <Text style={{ fontFamily: fonts.bodyBold, fontSize: 15, color: colors.cream }}>{title}</Text>
+        <Text style={{ fontFamily: fonts.body, fontSize: 13, lineHeight: 18, color: active ? colors.text : colors.textMuted, marginTop: 2 }}>{text}</Text>
+      </View>
+      <Icon name={active ? 'radio-button-on' : 'radio-button-off'} size={20} color={active ? colors.cream : colors.textFaint} />
+    </Pressable>
+  );
+}
+
+function Section({ label: text, children }: { label: string; children: React.ReactNode }) {
   return (
     <View style={{ gap: space(2) }}>
-      <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 12, color: colors.textMuted, letterSpacing: 0.4 }}>{label}</Text>
+      <Text style={label}>{text}</Text>
       <Row gap={2} style={{ flexWrap: 'wrap' }}>
         {children}
       </Row>
     </View>
   );
 }
+
+const label = { fontFamily: fonts.bodyMedium, fontSize: 12, color: colors.textMuted, letterSpacing: 0.4 } as const;

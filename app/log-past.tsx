@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Text, View } from 'react-native';
 import { Body, Button, Chip, Field, Row, Screen } from '@/src/components/ui';
 import { isFuture, When, WhenPicker } from '@/src/components/WhenPicker';
@@ -7,6 +7,8 @@ import { useStore } from '@/src/store';
 import { TEMPLATES } from '@/src/templates';
 import { colors, fonts, space } from '@/src/theme';
 import { addExercisesByName } from '@/src/workoutActions';
+import { type PlanItem, runningPlanItems } from '@/src/social/api';
+import { todayKey } from '@/src/store';
 
 /** Default: this morning if it's afternoon or later, otherwise an hour ago. */
 function defaultWhen(): When {
@@ -24,16 +26,30 @@ export default function LogPastWorkout() {
   const [template, setTemplate] = useState<string | null>(null);
   const [title, setTitle] = useState('');
   const [when, setWhen] = useState<When>(defaultWhen);
+  const [planItems, setPlanItems] = useState<{ challenge: string; item: PlanItem }[]>([]);
+  const [planItem, setPlanItem] = useState<PlanItem | null>(null);
+  const day = todayKey(when.start);
+
+  // Plan workouts from challenges running on the chosen day
+  useEffect(() => {
+    runningPlanItems(day).then(setPlanItems).catch(() => setPlanItems([]));
+  }, [day]);
 
   const pick = (t: string | null) => {
     setTemplate(t);
+    setPlanItem(null);
     setTitle(t ?? '');
+  };
+  const pickPlan = (p: PlanItem) => {
+    setPlanItem(p);
+    setTemplate(null);
+    setTitle(p.title);
   };
 
   const save = () => {
-    const id = logPast(title.trim() || 'Workout', when.start, when.durationMin);
-    const t = TEMPLATES.find((x) => x.title === template);
-    if (t) addExercisesByName(id, t.exercises);
+    const id = logPast(title.trim() || 'Workout', when.start, when.durationMin, planItem?.title);
+    const exercises = planItem?.exercises ?? TEMPLATES.find((x) => x.title === template)?.exercises;
+    if (exercises?.length) addExercisesByName(id, exercises);
     router.replace({ pathname: '/workout/[id]', params: { id, logged: '1' } });
   };
 
@@ -41,10 +57,21 @@ export default function LogPastWorkout() {
     <Screen padTop={false} contentStyle={{ gap: space(6), paddingBottom: space(16) }}>
       <Body muted>Forgot to log live? Add it here, then fill in what you did.</Body>
 
+      {planItems.length ? (
+        <View style={{ gap: space(2) }}>
+          <Text style={label}>From your challenges — counts toward the plan</Text>
+          <Row gap={2} style={{ flexWrap: 'wrap' }}>
+            {planItems.map(({ item }) => (
+              <Chip key={item.title} icon="trophy-outline" label={item.title} active={planItem?.title === item.title} onPress={() => pickPlan(item)} />
+            ))}
+          </Row>
+        </View>
+      ) : null}
+
       <View style={{ gap: space(2) }}>
-        <Text style={label}>What did you do?</Text>
+        <Text style={label}>{planItems.length ? 'Or something else' : 'What did you do?'}</Text>
         <Row gap={2} style={{ flexWrap: 'wrap' }}>
-          <Chip label="Start blank" active={template === null} onPress={() => pick(null)} />
+          <Chip label="Start blank" active={template === null && !planItem} onPress={() => pick(null)} />
           {TEMPLATES.map((t) => (
             <Chip key={t.title} label={t.title} active={template === t.title} onPress={() => pick(t.title)} />
           ))}

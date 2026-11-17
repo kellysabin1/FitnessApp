@@ -78,6 +78,14 @@ create table if not exists public.challenges (
 );
 alter table public.challenges enable row level security;
 
+-- v2: challenge type.
+--   'any'  = every workout members log counts (a plan, if any, earns bonus points)
+--   'plan' = only workouts from the group plan count
+alter table public.challenges add column if not exists mode text not null default 'any';
+do $$ begin
+  alter table public.challenges add constraint challenges_mode_check check (mode in ('any', 'plan'));
+exception when duplicate_object then null; end $$;
+
 create table if not exists public.challenge_members (
   challenge_id uuid not null references public.challenges (id) on delete cascade,
   user_id uuid not null references public.profiles (id) on delete cascade,
@@ -119,19 +127,24 @@ create policy "leave challenge" on public.challenge_members
   for delete to authenticated using (user_id = auth.uid());
 -- joining/adding goes through the functions below
 
+drop function if exists public.create_challenge(text, date, date, boolean, boolean, boolean, boolean, integer, jsonb);
 create or replace function public.create_challenge(
   p_name text, p_starts_on date, p_ends_on date,
   p_score_workouts boolean, p_score_steps boolean, p_score_streaks boolean, p_score_plan boolean,
-  p_step_goal integer, p_plan jsonb
+  p_step_goal integer, p_plan jsonb, p_mode text default 'any'
 ) returns public.challenges
 language plpgsql security definer set search_path = public as $$
 declare c challenges;
 begin
   if auth.uid() is null then raise exception 'not signed in'; end if;
+  if p_mode = 'plan' and jsonb_array_length(coalesce(p_plan, '[]'::jsonb)) = 0 then
+    raise exception 'A plan-only challenge needs at least one plan workout';
+  end if;
   insert into challenges (name, created_by, starts_on, ends_on, score_workouts, score_steps,
-                          score_streaks, score_plan, step_goal, plan)
+                          score_streaks, score_plan, step_goal, plan, mode)
   values (p_name, auth.uid(), p_starts_on, p_ends_on, p_score_workouts, p_score_steps,
-          p_score_streaks, p_score_plan, p_step_goal, coalesce(p_plan, '[]'::jsonb))
+          -- in plan-only challenges the plan *is* the workout score, so no separate bonus
+          p_score_streaks, p_score_plan and p_mode <> 'plan', p_step_goal, coalesce(p_plan, '[]'::jsonb), p_mode)
   returning * into c;
   insert into challenge_members (challenge_id, user_id) values (c.id, auth.uid());
   insert into activity (challenge_id, user_id, kind, payload) values (c.id, auth.uid(), 'created', '{}'::jsonb);
@@ -278,6 +291,7 @@ alter table public.app_secrets enable row level security;
 -- ───────────────────────── Leaderboard ─────────────────────────
 -- Points:
 --   workouts  10 per finished workout (max 2 a day count)
+--             in 'plan' challenges only workouts from the group plan count
 --   steps     1 per 1,000 steps (max 20 a day) + 5 bonus on days you hit the step goal
 --   streaks   +3 for every active day that follows another active day
 --             (active = a workout, or the step goal hit)
@@ -300,7 +314,9 @@ begin
     where m.challenge_id = p_challenge
   ),
   w as (
-    select wk.user_id, wk.local_day, count(*)::int as n,
+    select wk.user_id, wk.local_day,
+           count(*) filter (where c.mode = 'any' or (wk.plan_item is not null and exists (
+             select 1 from jsonb_array_elements(c.plan) e where e->>'title' = wk.plan_item)))::int as n,
            count(*) filter (where wk.plan_item is not null and exists (
              select 1 from jsonb_array_elements(c.plan) e where e->>'title' = wk.plan_item))::int as plan_n
     from workouts wk
@@ -350,9 +366,10 @@ begin
     -- current streak: consecutive active days ending today or yesterday
     select a.user_id, count(*)::int as current_streak
     from active a
+    -- a day counts if it was active and every day after it up to yesterday was active too
+    -- (today not done yet doesn't break the streak)
     where a.is_active
-      and a.d > coalesce((select max(z.d) from active z
-                          where z.user_id = a.user_id and not z.is_active and z.d <= current_date), date '1900-01-01')
+      and a.d <= current_date
       and not exists (
         select 1 from generate_series(a.d, current_date - 1, interval '1 day') g
         where not exists (select 1 from active y where y.user_id = a.user_id and y.d = g::date and y.is_active)
@@ -368,7 +385,12 @@ begin
   order by coalesce(t.points, 0) desc, m.username;
 end $$;
 
-grant execute on function public.create_challenge(text, date, date, boolean, boolean, boolean, boolean, integer, jsonb) to authenticated;
+-- Only signed-in users may call these (Supabase grants functions to everyone by default).
+revoke execute on function public.create_challenge(text, date, date, boolean, boolean, boolean, boolean, integer, jsonb, text) from public, anon;
+revoke execute on function public.join_challenge(text) from public, anon;
+revoke execute on function public.add_friend_to_challenge(uuid, uuid) from public, anon;
+revoke execute on function public.challenge_leaderboard(uuid) from public, anon;
+grant execute on function public.create_challenge(text, date, date, boolean, boolean, boolean, boolean, integer, jsonb, text) to authenticated;
 grant execute on function public.join_challenge(text) to authenticated;
 grant execute on function public.add_friend_to_challenge(uuid, uuid) to authenticated;
 grant execute on function public.challenge_leaderboard(uuid) to authenticated;

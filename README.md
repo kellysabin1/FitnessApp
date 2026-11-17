@@ -22,6 +22,8 @@ Everything is stored on your phone. The only things that leave it are what's sen
 
 - **Accounts** (email + password) with an @username; signing in also backs up your workouts.
 - **Friends**: search by @username, send/accept requests.
+- **Two kinds of challenge**: *Any workout* (everything members log counts; an optional shared plan earns
+  bonus points) or *Group plan* (only the plan's workouts count). Plans can use routines or custom workouts.
 - **Challenges**: pick a length, what earns points (workouts, daily steps, streaks, a shared group plan),
   invite by link/code or add friends directly. Leaderboard, activity feed with reactions, and nudges.
 - **Notifications** when a friend finishes a workout or nudges you — Web Push from the home-screen app
@@ -36,7 +38,8 @@ enforced in the database (`supabase/schema.sql`); `supabase/rls_test.sql` checks
 ### Friends & challenges setup
 
 1. Create a Supabase project. In **Authentication → Providers → Email**, turn **Confirm email** off.
-2. **SQL Editor → New query**: paste all of `supabase/schema.sql` → **Run**.
+2. **SQL Editor → New query**: paste all of `supabase/schema.sql` → **Run**. It's safe to re-run, and
+   re-running it is also how you apply updates.
 3. Render → **rep-coach** → Environment: add `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` (secret) and
    `APP_URL` (your rep-app address).
 4. The Supabase URL, publishable key and notification server address are public and built into
