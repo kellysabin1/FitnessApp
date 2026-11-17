@@ -122,6 +122,7 @@ export default function Today() {
               style={{ marginTop: space(4) }}
               onPress={() => router.push(`/workout/${s.startWorkout()}`)}
             />
+            <Button title="Log one I already did" variant="ghost" small style={{ marginTop: space(2) }} onPress={() => router.push('/log-past')} />
           </Card>
         )}
 

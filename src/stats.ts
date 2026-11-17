@@ -112,3 +112,14 @@ export function relativeDay(iso: string) {
   if (k === todayKey(y)) return 'Yesterday';
   return d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
 }
+
+/** "This morning", "Yesterday evening", "Sat, Nov 14 · morning" */
+export function whenLabel(iso: string) {
+  const d = new Date(iso);
+  const h = d.getHours();
+  const part = h < 12 ? 'morning' : h < 17 ? 'afternoon' : 'evening';
+  const day = relativeDay(iso);
+  if (day === 'Today') return h >= 21 ? 'Tonight' : `This ${part}`;
+  if (day === 'Yesterday') return `Yesterday ${part}`;
+  return `${day} · ${part}`;
+}

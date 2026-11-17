@@ -1,21 +1,12 @@
 import { router } from 'expo-router';
 import { Text, View } from 'react-native';
 import { Body, Button, Card, Display, Empty, Eyebrow, H2, Italic, Row, Screen, SectionHeader } from '@/src/components/ui';
-import { finished, personalRecords, relativeDay, setsDone, workoutDurationMin, workoutVolumeKg } from '@/src/stats';
+import { finished, personalRecords, relativeDay, whenLabel, setsDone, workoutDurationMin, workoutVolumeKg } from '@/src/stats';
 import { useStore, Workout } from '@/src/store';
 import { colors, fonts, space } from '@/src/theme';
 import { addExercisesByName } from '@/src/workoutActions';
+import { TEMPLATES } from '@/src/templates';
 import { displayWeight, weightLabel } from '@/src/units';
-
-// Quick-start templates covering strength, pilates, mobility and cardio.
-const TEMPLATES: { title: string; tone: 'croc' | 'tortoise' | 'satin' | 'stripe' | 'cocoa' | 'mocha'; exercises: string[] }[] = [
-  { title: 'Glutes & hamstrings', tone: 'croc', exercises: ['Hip Thrust', 'Romanian Deadlift', 'Bulgarian Split Squat', 'Cable Kickback', 'Hip Abduction Machine'] },
-  { title: 'Upper body sculpt', tone: 'stripe', exercises: ['Lat Pulldown', 'Dumbbell Bench Press', 'Seated Cable Row', 'Lateral Raise', 'Bicep Curl', 'Tricep Rope Pushdown'] },
-  { title: 'Quads & core', tone: 'mocha', exercises: ['Goblet Squat', 'Leg Press', 'Walking Lunge', 'Leg Extension', 'Dead Bug', 'Plank'] },
-  { title: 'Mat Pilates', tone: 'tortoise', exercises: ['The Hundred', 'Roll Up', 'Single Leg Stretch', 'Criss Cross', 'Side-Lying Leg Series', 'Swan'] },
-  { title: 'Mobility reset', tone: 'satin', exercises: ['Cat-Cow', 'World’s Greatest Stretch', '90/90 Hip Switch', 'Pigeon Pose', 'Thoracic Rotation'] },
-  { title: 'Zone 2 + walk', tone: 'stripe', exercises: ['Incline Walk', 'Zone 2 Cycling'] },
-];
 
 export default function Train() {
   const s = useStore();
@@ -41,6 +32,13 @@ export default function Train() {
         icon="add"
         style={{ marginTop: space(6) }}
         onPress={() => router.push(`/workout/${s.startWorkout()}`)}
+      />
+      <Button
+        title="Log a past workout"
+        icon="time-outline"
+        variant="secondary"
+        style={{ marginTop: space(3) }}
+        onPress={() => router.push('/log-past')}
       />
 
       <SectionHeader title="Quick start" />
@@ -95,7 +93,7 @@ function HistoryCard({ w }: { w: Workout }) {
   return (
     <Card onPress={() => router.push(`/workout/${w.id}`)}>
       <Row style={{ justifyContent: 'space-between' }}>
-        <Eyebrow color={colors.textMuted}>{relativeDay(w.startedAt)}</Eyebrow>
+        <Eyebrow color={colors.textMuted}>{whenLabel(w.startedAt)}</Eyebrow>
         {w.mood ? <Text style={{ color: colors.latte }}>{'✦'.repeat(w.mood)}</Text> : null}
       </Row>
       <H2 style={{ marginTop: space(1) }}>{w.title}</H2>

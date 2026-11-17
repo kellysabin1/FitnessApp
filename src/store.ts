@@ -65,6 +65,8 @@ export interface Workout {
   exercises: WorkoutExercise[];
   notes?: string;
   mood?: number; // 1–5 how it felt
+  /** true when entered after the fact rather than live */
+  logged?: boolean;
 }
 
 export interface BodyEntry {
@@ -129,6 +131,8 @@ interface State {
   set: (patch: Partial<State>) => void;
   updateProfile: (patch: Partial<Profile>) => void;
   startWorkout: (title?: string) => string;
+  /** Create an already-finished workout that happened in the past. */
+  logPastWorkout: (title: string, startedAt: Date, durationMin: number) => string;
   updateWorkout: (id: string, fn: (w: Workout) => Workout) => void;
   finishWorkout: (id: string, mood?: number) => void;
   deleteWorkout: (id: string) => void;
@@ -193,8 +197,21 @@ export const useStore = create<State>()(
         set({ workouts: [w, ...get().workouts] });
         return id;
       },
+      logPastWorkout: (title, startedAt, durationMin) => {
+        const id = uid();
+        const w: Workout = {
+          id,
+          title: title || 'Workout',
+          startedAt: startedAt.toISOString(),
+          finishedAt: new Date(+startedAt + durationMin * 60000).toISOString(),
+          exercises: [],
+          logged: true,
+        };
+        set({ workouts: sortWorkouts([w, ...get().workouts]) });
+        return id;
+      },
       updateWorkout: (id, fn) =>
-        set({ workouts: get().workouts.map((w) => (w.id === id ? fn(w) : w)) }),
+        set({ workouts: sortWorkouts(get().workouts.map((w) => (w.id === id ? fn(w) : w))) }),
       finishWorkout: (id, mood) =>
         set({
           workouts: get().workouts.map((w) =>
@@ -231,6 +248,14 @@ export const useStore = create<State>()(
     },
   ),
 );
+
+/** Newest first; an in-progress workout always stays on top. */
+function sortWorkouts(ws: Workout[]) {
+  return [...ws].sort((a, b) => {
+    if (!a.finishedAt !== !b.finishedAt) return a.finishedAt ? 1 : -1;
+    return b.startedAt.localeCompare(a.startedAt);
+  });
+}
 
 function defaultWorkoutTitle() {
   const h = new Date().getHours();

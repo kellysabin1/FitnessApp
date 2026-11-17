@@ -59,6 +59,7 @@ export default function RootLayout() {
         <Stack.Screen name="workout/[id]" options={{ title: '' }} />
         <Stack.Screen name="exercise-picker" options={{ presentation: 'modal', title: 'Add exercise' }} />
         <Stack.Screen name="log-body" options={{ presentation: 'modal', title: 'Log body' }} />
+        <Stack.Screen name="log-past" options={{ presentation: 'modal', title: 'Log a past workout' }} />
       </Stack>
     </ThemeProvider>
   );

@@ -3,12 +3,14 @@ import { useEffect, useState } from 'react';
 import { Alert, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Body, Button, Card, Eyebrow, Icon, Row, Screen, tap } from '@/src/components/ui';
 import { CATEGORY_LABEL } from '@/src/exercises';
+import { When, WhenPicker } from '@/src/components/WhenPicker';
+import { whenLabel, workoutDurationMin } from '@/src/stats';
 import { SetEntry, useStore, WorkoutExercise } from '@/src/store';
 import { colors, fonts, radius, space } from '@/src/theme';
 import { inputToKg, kgToInput, Units, weightLabel } from '@/src/units';
 
 export default function WorkoutScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, logged } = useLocalSearchParams<{ id: string; logged?: string }>();
   const w = useStore((s) => s.workouts.find((x) => x.id === id));
   const units = useStore((s) => s.units);
   const update = useStore((s) => s.updateWorkout);
@@ -16,6 +18,7 @@ export default function WorkoutScreen() {
   const deleteWorkout = useStore((s) => s.deleteWorkout);
   const [finishing, setFinishing] = useState(false);
   const [mood, setMood] = useState(4);
+  const [editingWhen, setEditingWhen] = useState(false);
   const elapsed = useElapsed(w?.startedAt, w?.finishedAt);
 
   if (!w) {
@@ -59,7 +62,30 @@ export default function WorkoutScreen() {
         }}
       />
       <Screen padTop={false}>
-        <Eyebrow>{isDone ? new Date(w.startedAt).toDateString() : 'In session'}</Eyebrow>
+        {isDone ? (
+          <Row style={{ justifyContent: 'space-between' }}>
+            <Eyebrow>{`${whenLabel(w.startedAt)} · ${workoutDurationMin(w)} min`}</Eyebrow>
+            <Pressable onPress={() => setEditingWhen((v) => !v)} hitSlop={10}>
+              <Text style={styles.link}>{editingWhen ? 'Done' : 'Change'}</Text>
+            </Pressable>
+          </Row>
+        ) : (
+          <Eyebrow>In session</Eyebrow>
+        )}
+        {isDone && editingWhen ? (
+          <Card style={{ marginTop: space(3) }}>
+            <WhenPicker
+              value={{ start: new Date(w.startedAt), durationMin: workoutDurationMin(w) }}
+              onChange={(v: When) =>
+                update(w.id, (cur) => ({
+                  ...cur,
+                  startedAt: v.start.toISOString(),
+                  finishedAt: new Date(+v.start + v.durationMin * 60000).toISOString(),
+                }))
+              }
+            />
+          </Card>
+        ) : null}
         <TextInput
           value={w.title}
           onChangeText={(title) => update(w.id, (cur) => ({ ...cur, title }))}
@@ -73,6 +99,7 @@ export default function WorkoutScreen() {
               key={ex.id}
               ex={ex}
               units={units}
+              autoDone={isDone}
               onChange={(fn) => setEx(ex.id, fn)}
               onRemove={() => update(w.id, (cur) => ({ ...cur, exercises: cur.exercises.filter((e) => e.id !== ex.id) }))}
             />
@@ -95,6 +122,10 @@ export default function WorkoutScreen() {
           multiline
           style={styles.notes}
         />
+
+        {isDone ? (
+          <Button title={logged ? 'Save workout' : 'Done'} icon="checkmark" style={{ marginTop: space(6) }} onPress={() => router.back()} />
+        ) : null}
 
         {!isDone && !finishing && (
           <Button title="Finish workout" icon="checkmark" style={{ marginTop: space(6) }} onPress={() => setFinishing(true)} />
@@ -132,11 +163,14 @@ export default function WorkoutScreen() {
 function ExerciseCard({
   ex,
   units,
+  autoDone,
   onChange,
   onRemove,
 }: {
   ex: WorkoutExercise;
   units: Units;
+  /** Past workouts: typing a value marks the set done automatically. */
+  autoDone?: boolean;
   onChange: (fn: (e: WorkoutExercise) => WorkoutExercise) => void;
   onRemove: () => void;
 }) {
@@ -168,7 +202,7 @@ function ExerciseCard({
         <Row key={i} gap={2} style={[styles.setRow, set.done && { backgroundColor: 'rgba(95,99,64,0.28)' }]}>
           <Text style={[styles.setNum, { width: 28 }]}>{i + 1}</Text>
           {cols.map((c) => (
-            <NumInput key={c.key} value={c.get(set)} onCommit={(v) => setSet(i, c.set(v))} placeholder="—" />
+            <NumInput key={c.key} value={c.get(set)} onCommit={(v) => setSet(i, { ...c.set(v), ...(autoDone && v.trim() ? { done: true } : {}) })} placeholder="—" />
           ))}
           <Pressable
             onPress={() => { tap(); setSet(i, { done: !set.done }); }}
@@ -306,6 +340,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  link: { fontFamily: fonts.bodyMedium, fontSize: 13, color: colors.latte },
   smallBtn: { paddingVertical: space(2), paddingHorizontal: space(1) },
   smallBtnText: { fontFamily: fonts.bodyMedium, fontSize: 13, color: colors.latte },
   notes: {
