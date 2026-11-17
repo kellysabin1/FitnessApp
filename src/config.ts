@@ -3,7 +3,7 @@
 // row-level-security rules in supabase/schema.sql, not from hiding these.
 // Fill these in (or set EXPO_PUBLIC_SUPABASE_URL / EXPO_PUBLIC_SUPABASE_ANON_KEY).
 export const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL || 'https://kkhpfyxrestlohjvpcit.supabase.co';
-export const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '';
+export const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_Szhjbt3ao674iC7mtvfdwQ_zTM_fV3Z';
 
 export const socialEnabled = () => !!SUPABASE_URL && !!SUPABASE_ANON_KEY;
 

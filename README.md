@@ -39,8 +39,8 @@ enforced in the database (`supabase/schema.sql`); `supabase/rls_test.sql` checks
 2. **SQL Editor → New query**: paste all of `supabase/schema.sql` → **Run**.
 3. Render → **rep-coach** → Environment: add `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` (secret) and
    `APP_URL` (your rep-app address).
-4. Render → **rep-app** → Environment: add `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY`
-   and `EXPO_PUBLIC_PUSH_SERVER_URL` (your rep-coach address), then redeploy.
+4. The Supabase URL, publishable key and notification server address are public and built into
+   `src/config.ts` — rep-app needs no extra settings.
 
 ## Project layout
 

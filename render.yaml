@@ -38,10 +38,3 @@ services:
         value: "22"
       - key: EXPO_NO_TELEMETRY
         value: "1"
-      # Public values (safe to be visible) — see README "Friends & challenges setup"
-      - key: EXPO_PUBLIC_SUPABASE_URL
-        sync: false
-      - key: EXPO_PUBLIC_SUPABASE_ANON_KEY
-        sync: false
-      - key: EXPO_PUBLIC_PUSH_SERVER_URL
-        sync: false # your rep-coach address
