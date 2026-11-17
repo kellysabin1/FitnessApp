@@ -1,4 +1,9 @@
-# rep. — hardening backlog
+# rep. — backlog
+
+Two parts: **Part 1 — Hardening** (security, compliance, delivery; REP-1…12) and
+**Part 2 — Product** (features from the product owner's list; REP-13…29, drafts awaiting detail).
+
+# Part 1 — Hardening
 
 Source: risks in [ARCHITECTURE.md §7](ARCHITECTURE.md#7-known-gaps--recommendations-prioritized).
 Sizes: **S** ≤ ½ day · **M** 1–2 days · **L** 3–5 days. Priority: **P0** before inviting anyone beyond
@@ -188,3 +193,265 @@ require clear disclosure and consent.
 ## Not in this batch (tracked for later)
 - Upgrade hosting tiers before real users depend on the app (Render no-sleep, Supabase backups/no pausing).
 - Native iOS build + on-device verification of HealthKit/RingConn/Oura (blocked on Apple Developer Program).
+
+
+---
+
+# Part 2 — Product backlog (drafts)
+
+From the product owner's "App Backlog" list. These are **drafts**: scope and acceptance criteria are a
+starting point, and each has **Open questions** to answer in refinement. Priority is **TBD** until the
+product owner ranks them; sizes are rough estimates.
+
+## Epic E — Accounts everywhere
+
+### REP-13 · Account for the whole app, not just the Friends tab
+**Type:** Feature · **Priority:** TBD · **Size:** M · **Depends on:** REP-4 (email verification) recommended
+
+**Today:** the app works fully signed-out; an account is only needed for Friends & challenges.
+
+**Draft scope**
+- Sign up / sign in becomes part of onboarding; profile, goals, body log and settings sync to the account
+  (today only finished workouts and steps sync).
+- Existing on-device data is uploaded on first sign-in; signing in on a new phone restores everything.
+- Coach access tied to the account (pairs naturally with REP-1).
+
+**Draft acceptance criteria**
+- [ ] A new user can't reach the main tabs without an account (or an explicit "continue offline" if kept).
+- [ ] Signing in on a second device restores profile, goals, body log, workouts, steps and settings.
+- [ ] Existing users are prompted once to create an account; their local data is preserved and uploaded.
+
+**Open questions:** Is an offline / no-account mode still allowed? Should body weight and measurements be
+visible to challenge-mates (today: no)?
+
+## Epic F — Brand voice & audience
+
+### REP-14 · Broaden the audience while keeping the aesthetic
+**Type:** UX / Content · **Priority:** TBD · **Size:** S · **Depends on:** —
+
+**Draft scope**
+- Keep the palette, textures, typography and line-heart; make copy and defaults gender-neutral.
+- Review onboarding goal labels, coach suggestions and templates for gendered assumptions
+  (e.g. coach prompt chip "Give me 3 new glute exercises", goal "Build glutes & legs" as a lead option).
+- Optional: let users pick a coach tone (e.g. hype / calm / no-nonsense) instead of one personality.
+
+**Draft acceptance criteria**
+- [ ] No gendered copy remains in the app or coach system prompt (checklist reviewed with product owner).
+- [ ] Visual identity (colours, textures, fonts) unchanged.
+
+### REP-15 · Remove the "that girl" voice from copy
+**Type:** Content · **Priority:** TBD (quick win) · **Size:** S · **Depends on:** part of REP-14
+
+Current strings to rewrite (with location):
+
+| Where | Current copy |
+|---|---|
+| Today header (`app/(tabs)/index.tsx`) | fallback name "gorgeous" |
+| Workout finish (`app/workout/[id].tsx`) | "1 = rough · 5 = that girl" |
+| Progress header (`app/(tabs)/progress.tsx`) | "Proof you're glowing up." |
+| You header (`app/(tabs)/you.tsx`) | "{name} era." |
+| Onboarding (`app/onboarding.tsx`) | "Your strongest era starts here." |
+| Friends card (`app/(tabs)/friends.tsx`) | "Accountability, but cute" |
+| New challenge (`app/challenge-new.tsx`) | placeholder "Glute girls November" |
+
+**Draft acceptance criteria**
+- [ ] All strings above replaced with approved copy (product owner sign-off on a copy sheet).
+- [ ] Coach persona prompt reviewed for the same tone.
+
+**Open questions:** Desired voice in one sentence (e.g. "calm, confident, a little dry")?
+
+## Epic G — Goals
+
+### REP-16 · More customizable goals
+**Type:** Feature · **Priority:** TBD · **Size:** M · **Depends on:** —
+
+**Today:** goals are a fixed list of categories (get stronger, lose fat…) plus goal weight and step goal.
+
+**Draft scope**
+- Measurable custom goals with a target and optional deadline, e.g. "Hip thrust 225 lb", "Run 5K under 30 min",
+  "Waist 28 in", "4 workouts/week", "10,000 steps/day", or free-text.
+- Goal types: lift (exercise + weight × reps), body metric, frequency, steps, cardio time/distance, custom.
+- Goals feed the AI coach context.
+
+**Draft acceptance criteria**
+- [ ] User can create, edit, pause and delete goals of each type.
+- [ ] Each goal shows current value vs. target, computed from logged data where possible.
+
+### REP-17 · Goal history and progress over time
+**Type:** Feature · **Priority:** TBD · **Size:** M · **Depends on:** REP-16
+
+**Draft scope**
+- Keep a history when a goal changes (old target, new target, date) instead of overwriting it.
+- Progress chart per goal (value over time with the target line and any changes marked); completed goals archive.
+
+**Draft acceptance criteria**
+- [ ] Changing a goal's target creates a history entry; the chart shows the change point.
+- [ ] Completed goals are kept and viewable with the completion date.
+
+**Open questions:** Should goals sync/share with challenge-mates? Celebrate completions (notification/feed)?
+
+## Epic H — Workout logging
+
+### REP-18 · Compare against previous workouts
+**Type:** Feature · **Priority:** TBD · **Size:** M · **Depends on:** —
+
+**Today:** last session's numbers prefill new sets; PRs (estimated 1RM) are listed on the Train tab.
+
+**Draft scope**
+- In the logger, show "last time" per exercise (date, sets × reps × weight) and the delta as you log
+  (e.g. "+5 lb vs last time", "+2 reps").
+- Per-exercise history screen: sessions list, best set, e1RM and volume trend charts.
+- Workout summary on finish: volume/duration vs. the last similar workout, new PRs highlighted.
+
+**Draft acceptance criteria**
+- [ ] Each exercise card shows the previous session and a live delta.
+- [ ] Tapping an exercise opens its history with at least e1RM and volume charts.
+- [ ] Finishing a workout shows a comparison summary and any PRs.
+
+### REP-19 · Warm-up vs working sets
+**Type:** Feature · **Priority:** TBD · **Size:** S · **Depends on:** —
+
+**Draft scope**
+- Set type per set: warm-up / working (optionally drop set / failure).
+- Warm-up sets are excluded from volume, PRs, e1RM, comparisons and challenge stats.
+
+**Draft acceptance criteria**
+- [ ] User can mark a set as warm-up in one tap; it's visually distinct.
+- [ ] Warm-ups don't change PRs or volume; existing sets default to "working".
+
+### REP-20 · Bigger exercise library + save custom exercises
+**Type:** Feature · **Priority:** TBD · **Size:** M · **Depends on:** —
+
+**Today:** ~90 built-in exercises. A typed-in name can be added to a workout, but it isn't saved to the
+library, so it doesn't show up in search next time.
+
+**Draft scope**
+- Expand the library, especially **unilateral** options (single-leg RDL, single-leg hip thrust, single-leg
+  press, Cossack squat, single-arm row/press/pulldown, single-arm cable work, etc.).
+- Mark exercises as unilateral and allow per-side logging (left/right reps) where relevant.
+- "Not finding it? Create exercise": name, category, muscle group, type (weights / bodyweight / time /
+  distance) → saved to the user's library (synced to the account once REP-13 lands).
+
+**Draft acceptance criteria**
+- [ ] Search returns custom exercises alongside built-ins; they can be edited and deleted.
+- [ ] At least N new unilateral exercises added (N agreed with product owner).
+
+**Open questions:** Per-side logging required, or just the exercise name? Should custom exercises be
+shareable inside challenge plans? (Plans already accept free-text names.)
+
+## Epic I — Reminders & notifications
+
+### REP-21 · Reminders to log workouts
+**Type:** Feature · **Priority:** TBD · **Size:** M · **Depends on:** REP-13 (needs account email), REP-4 (email sending)
+
+**Draft scope**
+- User-set schedule (days + time) and/or "nudge me if I haven't logged by X on a training day".
+- Delivery via **email** (as requested) and/or push (already built for friends).
+- Unsubscribe link in every email; per-reminder on/off.
+
+**Draft acceptance criteria**
+- [ ] Reminders send at the user's local time; none sent if a workout was already logged that day.
+- [ ] One-click unsubscribe works; preference saved.
+
+**Open questions:** Email only, or push too? Weekly summary email?
+
+### REP-22 · Reminders to log meals
+**Type:** Feature · **Priority:** TBD · **Size:** S · **Depends on:** REP-21, REP-28
+
+Same mechanism as REP-21, scheduled around meal times. Only meaningful once meal tracking exists (REP-28).
+
+## Epic J — Friends & challenges
+
+### REP-23 · Clearer, more descriptive points system
+**Type:** Feature / UX · **Priority:** TBD · **Size:** M · **Depends on:** —
+
+**Today:** fixed rules (workout +10, 1,000 steps +1, step goal +5, streak day +3, plan bonus +5); the
+leaderboard shows totals plus a few stats.
+
+**Draft scope**
+- "How scoring works" sheet on every challenge.
+- Points breakdown per person (tap a row → points by category and by day).
+- Feed items show points earned ("+10 · Lower body").
+- Option to weight categories differently per challenge (see REP-24).
+
+**Draft acceptance criteria**
+- [ ] Any member can see exactly why each person has their score.
+- [ ] Breakdown totals always equal the leaderboard total (verified by SQL test).
+
+**Open questions:** What felt unclear today — the rules, the numbers, or both? Points for things like
+duration, effort, PRs, or Pilates/cardio specifically?
+
+### REP-24 · More customizable challenges (times, details)
+**Type:** Feature · **Priority:** TBD · **Size:** M · **Depends on:** REP-23
+
+**Draft scope**
+- Custom start/end dates and times (not just presets); time zone shown.
+- Edit after creation (creator): name, description/rules text, end date, step goal, plan, scoring weights.
+- Optional: cover texture/colour, max members, weekly targets (e.g. "3 plan workouts per week").
+
+**Draft acceptance criteria**
+- [ ] Creator can edit details; members see a "challenge updated" feed item.
+- [ ] Changing scoring recalculates the leaderboard consistently.
+
+**Open questions:** Which "times" matter — start/end times, workout windows (e.g. "before 9am counts double"),
+or deadlines per plan workout?
+
+### REP-25 · Creator can delete a challenge
+**Type:** Feature · **Priority:** TBD (quick win) · **Size:** S · **Depends on:** —
+
+**Today:** the database already allows the creator to delete a challenge (and members to leave); there's
+no button for it.
+
+**Draft scope**
+- "Delete challenge" (creator only) with a confirmation step; removes members, feed and reactions.
+- Members get a notification/feed note before deletion, or it disappears from their list.
+- Optional: transfer ownership instead of deleting.
+
+**Draft acceptance criteria**
+- [ ] Only the creator sees and can use Delete (also enforced by RLS — already in place).
+- [ ] After deletion the challenge disappears for all members; their own workouts are untouched.
+
+## Epic K — Data & intelligence
+
+### REP-26 · Import data from health apps
+**Type:** Feature · **Priority:** TBD · **Size:** L · **Depends on:** native iOS build (Apple Developer Program) for HealthKit
+
+**Today:** Apple Health (incl. RingConn) and Oura are code-complete but only work in the native app.
+
+**Draft scope (to confirm)**
+- Ship the native build so Apple Health / RingConn / Oura actually run.
+- Additional sources to evaluate: Strava, Garmin, Fitbit/Google Health Connect, Whoop, Strong/Hevy CSV import
+  (bring over past workout history).
+- One-time history import vs. ongoing sync per source.
+
+**Draft acceptance criteria**
+- [ ] Each supported source has connect / disconnect / last-synced status.
+- [ ] Imported workouts are de-duplicated against manual logs.
+
+**Open questions:** Which apps first? Workout history import, daily metrics, or both?
+
+### REP-27 · AI personal trainer — next iteration
+**Type:** Feature · **Priority:** TBD · **Size:** TBD · **Depends on:** REP-1 (per-user coach auth)
+
+**Today:** chat + weekly plan (focus, recommendations, step goal, recovery) using profile, goals, recent
+workouts, PRs and wearable data.
+
+**Placeholder** — product owner to describe what's missing. Candidate ideas: turn a coach plan into a
+startable workout or a challenge plan in one tap; coach adjusts weights/reps set-by-set during a workout;
+proactive weekly check-in notification; uses goals from REP-16; remembers preferences between chats.
+
+### REP-28 · Meal / calorie intake tracker
+**Type:** Feature · **Priority:** TBD · **Size:** L · **Depends on:** — (REP-22 depends on this)
+
+**Draft scope (to confirm)**
+- Log meals with calories and macros (protein/carbs/fat); daily targets based on goals.
+- Food search (needs a nutrition database/API — e.g. USDA FoodData Central, Open Food Facts), barcode scan
+  (native), quick-add calories, saved meals.
+- Daily/weekly summary; feeds the AI coach context.
+
+**Draft acceptance criteria**
+- [ ] User can log a meal in under 30 seconds via search or quick-add.
+- [ ] Daily totals vs. targets are visible on Today.
+
+**Open questions:** Full macro tracking or calories only? Should nutrition ever be visible to challenge-mates?
+Privacy: eating data is sensitive — needs explicit coverage in REP-6.
