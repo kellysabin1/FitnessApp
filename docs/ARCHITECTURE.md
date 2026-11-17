@@ -107,11 +107,19 @@ Postgres Row-Level Security (RLS). The **service-role key** (bypasses RLS) exist
   `add_friend_to_challenge`) with `EXECUTE` revoked from `anon`/`public`.
 - **Leaderboard** is computed server-side in SQL (`challenge_leaderboard`, CTE pipeline) so scoring can't
   be manipulated by the client.
-- **Tests:** `supabase/rls_test.sql` — 31 assertions (cross-user write attempts, visibility, invite codes,
+- **Tests:** `supabase/rls_test.sql` — 42 assertions (cross-user write attempts, visibility, invite codes,
   scoring incl. plan-only mode and streaks, anon access). Run against local Postgres 16 with a mocked
   `auth.uid()`; also run as an upgrade test from the previous schema version.
 
-**Sync:** client-side, last-write-wins on `updatedAt`. On save: upsert workouts changed since
+**Accounts are required** (since v5): the welcome screen gates the app; sign-in restores everything. Private
+account data lives in owner-only tables — `user_data` (profile, settings, custom exercises) and `body_entries`
+(body log; never visible to challenge-mates). Challenges can have up to 3 daily tasks (`challenges.tasks`,
+check-offs in `task_checks`, +2 points each, today/yesterday only).
+
+**Sync:** client-side, last-write-wins on `updatedAt` (profile/settings as one document; body entries and
+workouts per row). Changes upload automatically ~4 s after they happen; sign-in pulls everything down first.
+Signing in as a different person on the same phone starts clean; signing out backs up, then clears the phone.
+Original notes: last-write-wins on `updatedAt`. On save: upsert workouts changed since
 `lastSyncAt`, tombstones via a `pendingDeletes` queue, upsert 30 days of steps. On sign-in: pull and merge
 (cloud restore). No realtime subscriptions — screens refetch on focus.
 

@@ -12,6 +12,7 @@ import { useEffect, useState } from 'react';
 import { useStore } from '@/src/store';
 import { restoreSession } from '@/src/social/api';
 import { registerServiceWorker } from '@/src/social/push';
+import { startAutoSync } from '@/src/social/autosync';
 import { colors, fonts } from '@/src/theme';
 
 export { ErrorBoundary } from 'expo-router';
@@ -45,6 +46,7 @@ export default function RootLayout() {
     if (!hydrated) return;
     restoreSession().catch(() => {});
     registerServiceWorker();
+    startAutoSync();
   }, [hydrated]);
 
   if (!loaded || !hydrated) return null;
@@ -62,6 +64,7 @@ export default function RootLayout() {
         }}
       >
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="welcome" options={{ headerShown: false, gestureEnabled: false }} />
         <Stack.Screen name="onboarding" options={{ headerShown: false, gestureEnabled: false }} />
         <Stack.Screen name="workout/[id]" options={{ title: '' }} />
         <Stack.Screen name="exercise-picker" options={{ presentation: 'modal', title: 'Add exercise' }} />

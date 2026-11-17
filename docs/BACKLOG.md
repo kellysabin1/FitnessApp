@@ -207,7 +207,7 @@ product owner ranks them; sizes are rough estimates.
 
 ## Epic E — Accounts everywhere
 
-### REP-13 · Account for the whole app, not just the Friends tab
+### REP-13 · Account for the whole app, not just the Friends tab — ✅ Done (account required; profile, settings, custom exercises, body log, workouts and steps sync; body log owner-only)
 **Type:** Feature · **Priority:** TBD · **Size:** M · **Depends on:** REP-4 (email verification) recommended
 
 **Today:** the app works fully signed-out; an account is only needed for Friends & challenges.
@@ -383,7 +383,7 @@ leaderboard shows totals plus a few stats.
 **Open questions:** What felt unclear today — the rules, the numbers, or both? Points for things like
 duration, effort, PRs, or Pilates/cardio specifically?
 
-### REP-24 · More customizable challenges (times, details) — ◐ Partly done (custom length 1–120 days, goal/house-rules text). Remaining: custom tasks — see Q below
+### REP-24 · More customizable challenges (times, details) — ✅ Done (custom length 1–120 days, goal/house rules, up to 3 daily tasks at +2 points each)
 **Type:** Feature · **Priority:** TBD · **Size:** M · **Depends on:** REP-23
 
 **Draft scope**

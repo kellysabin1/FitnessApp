@@ -32,18 +32,43 @@ export async function sendPasswordReset(email: string) {
   if (error) throw new Error(friendly(error));
 }
 
-export async function signOut() {
+/**
+ * Back everything up, sign out, and clear this phone — your data lives in your account and
+ * comes back when you sign in again. Returns false if the final backup failed (data still cleared
+ * only if `force`).
+ */
+export async function signOut(force = false): Promise<boolean> {
+  let backedUp = true;
+  try {
+    await syncUp();
+  } catch {
+    backedUp = false;
+  }
+  if (!backedUp && !force) return false;
   await sb()?.auth.signOut();
-  useStore.getState().set({ account: undefined, lastSyncAt: undefined, pendingDeletes: [] });
+  useStore.getState().resetAll();
+  return backedUp;
 }
 
 async function onSignedIn(session: Session) {
-  const set = useStore.getState().set;
-  set({ account: { userId: session.user.id, email: session.user.email ?? '' } });
+  const st = useStore.getState();
+  const userId = session.user.id;
+  // Someone else's data on this phone? Start clean (theirs is safe in their account).
+  if (st.dataOwner && st.dataOwner !== userId) st.resetAll();
+  useStore.setState({ account: { userId, email: session.user.email ?? '' }, dataOwner: userId });
   const p = await myProfile();
-  if (p) set({ account: { userId: session.user.id, email: session.user.email ?? '', username: p.username, displayName: p.display_name } });
-  await pullWorkouts().catch(() => {});
+  // Restore this account's data *before* marking sign-in complete, so the app doesn't
+  // briefly send a returning user to onboarding.
+  await pullAll().catch(() => {});
+  if (p) {
+    useStore.setState({ account: { userId, email: session.user.email ?? '', username: p.username, displayName: p.display_name } });
+  }
   await syncUp().catch(() => {});
+}
+
+/** Bring this phone up to date with the account (new phone, reinstall, or edits on another device). */
+export async function pullAll() {
+  await Promise.all([pullUserData(), pullBody(), pullWorkouts()]);
 }
 
 /** On app start: restore the account from a saved session (or clear it if the session is gone). */
@@ -57,7 +82,13 @@ export async function restoreSession() {
   }
   const acct = useStore.getState().account;
   if (!acct || acct.userId !== data.session.user.id || !acct.username) await onSignedIn(data.session);
-  else syncUp().catch(() => {});
+  else {
+    if (!useStore.getState().dataOwner) useStore.setState({ dataOwner: acct.userId });
+    pullAll()
+      .catch(() => {})
+      .then(() => syncUp())
+      .catch(() => {});
+  }
 }
 
 export async function accessToken() {
@@ -87,7 +118,9 @@ export async function saveProfile(username: string, displayName: string) {
     .from('profiles')
     .upsert({ id: acct.userId, username: u, display_name: displayName.trim().slice(0, 40) });
   if (error) throw new Error(friendly(error));
-  useStore.getState().set({ account: { ...acct, username: u, displayName: displayName.trim() } });
+  useStore.setState({ account: { ...acct, username: u, displayName: displayName.trim() } });
+  // Account setup finished: back up everything already on this phone right away.
+  await syncUp().catch(() => {});
 }
 
 // ─────────────── Sync (also your cloud backup) ───────────────
@@ -122,6 +155,41 @@ export async function syncUp() {
     const { error } = await c.from('workouts').upsert(changed.map((w) => toRow(s.account!.userId, w)));
     if (error) throw new Error(friendly(error));
   }
+  // Private account data: profile, settings, custom exercises (owner-only in the database)
+  if (!s.lastSyncAt || (s.userDataUpdatedAt ?? '') > since) {
+    const { error } = await c.from('user_data').upsert({
+      user_id: s.account.userId,
+      profile: s.profile,
+      settings: { units: s.units },
+      custom_exercises: s.customExercises ?? [],
+      updated_at: s.userDataUpdatedAt ?? started,
+    });
+    if (error) throw new Error(friendly(error));
+  }
+
+  // Body log (owner-only — never visible to challenge-mates)
+  const bodyChanged = s.body.filter((b) => !s.lastSyncAt || (b.updatedAt ?? '') > since);
+  if (bodyChanged.length) {
+    const inRange = (v: number | undefined, lo: number, hi: number) => (v != null && v >= lo && v <= hi ? v : null);
+    const { error } = await c.from('body_entries').upsert(
+      bodyChanged.map((b) => ({
+        user_id: s.account!.userId,
+        id: b.id,
+        day: b.date,
+        weight_kg: inRange(b.weightKg, 20, 400),
+        body_fat_pct: inRange(b.bodyFatPct, 1, 80),
+        waist_cm: inRange(b.waistCm, 30, 300),
+        hips_cm: inRange(b.hipsCm, 30, 300),
+        updated_at: b.updatedAt ?? started,
+      })),
+    );
+    if (error) throw new Error(friendly(error));
+  }
+  if (s.pendingBodyDeletes.length) {
+    const { error } = await c.from('body_entries').delete().eq('user_id', s.account.userId).in('id', s.pendingBodyDeletes);
+    if (!error) useStore.setState({ pendingBodyDeletes: [] });
+  }
+
   if (s.pendingDeletes.length) {
     const { error } = await c.from('workouts').delete().eq('user_id', s.account.userId).in('id', s.pendingDeletes);
     if (!error) useStore.getState().set({ pendingDeletes: [] });
@@ -143,6 +211,63 @@ export async function syncUp() {
     if (error) throw new Error(friendly(error));
   }
   useStore.getState().set({ lastSyncAt: started });
+}
+
+/** Profile, settings and custom exercises: the newer copy wins (this phone vs the account). */
+async function pullUserData() {
+  const c = requireSb();
+  const s = useStore.getState();
+  if (!s.account) return;
+  const { data, error } = await c
+    .from('user_data')
+    .select('profile, settings, custom_exercises, updated_at')
+    .eq('user_id', s.account.userId)
+    .maybeSingle();
+  if (error) throw new Error(friendly(error));
+  if (!data) return;
+  if (s.userDataUpdatedAt && s.userDataUpdatedAt >= data.updated_at) return; // this phone is newer
+  const remoteProfile = (data.profile ?? {}) as Partial<typeof s.profile>;
+  const remoteCustom = (data.custom_exercises ?? []) as typeof s.customExercises;
+  const byName = new Map((s.customExercises ?? []).map((e) => [e.name.toLowerCase(), e]));
+  for (const e of remoteCustom) byName.set(e.name.toLowerCase(), e);
+  useStore.setState({
+    profile: { ...s.profile, ...remoteProfile },
+    units: data.settings?.units === 'metric' ? 'metric' : data.settings?.units === 'us' ? 'us' : s.units,
+    customExercises: [...byName.values()].sort((a, b) => a.name.localeCompare(b.name)),
+    userDataUpdatedAt: data.updated_at,
+    // a restored profile means this person already finished onboarding
+    onboarded: s.onboarded || !!remoteProfile.name || (remoteProfile.goals?.length ?? 0) > 0,
+  });
+}
+
+/** Body log: per-entry, the newer copy wins. */
+async function pullBody() {
+  const c = requireSb();
+  const s = useStore.getState();
+  if (!s.account) return;
+  const { data, error } = await c
+    .from('body_entries')
+    .select('id, day, weight_kg, body_fat_pct, waist_cm, hips_cm, updated_at')
+    .eq('user_id', s.account.userId)
+    .limit(5000);
+  if (error) throw new Error(friendly(error));
+  if (!data?.length) return;
+  const num = (v: unknown) => (v == null ? undefined : Number(v));
+  const byId = new Map(useStore.getState().body.map((b) => [b.id, b]));
+  for (const r of data) {
+    const mine = byId.get(r.id);
+    if (mine && (mine.updatedAt ?? '') >= r.updated_at) continue;
+    byId.set(r.id, {
+      id: r.id,
+      date: r.day,
+      weightKg: num(r.weight_kg),
+      bodyFatPct: num(r.body_fat_pct),
+      waistCm: num(r.waist_cm),
+      hipsCm: num(r.hips_cm),
+      updatedAt: r.updated_at,
+    });
+  }
+  useStore.setState({ body: [...byId.values()].sort((a, b) => a.date.localeCompare(b.date)) });
 }
 
 /** Bring down workouts from the account that this phone doesn't have (new phone / reinstall). */
@@ -257,6 +382,8 @@ export interface Challenge {
   mode: ChallengeMode;
   /** optional goal / house rules from the creator */
   description?: string | null;
+  /** up to 3 daily tasks everyone ticks off (2 points each) */
+  tasks: string[];
 }
 
 export type ChallengeMode = 'any' | 'plan';
@@ -281,6 +408,8 @@ export interface LeaderRow {
   pts_streaks: number;
   pts_plan: number;
   goal_days: number;
+  tasks_done: number;
+  pts_tasks: number;
 }
 
 export interface FeedItem {
@@ -319,6 +448,7 @@ export async function createChallenge(input: {
   plan: PlanItem[];
   mode: ChallengeMode;
   description?: string;
+  tasks?: string[];
 }): Promise<Challenge> {
   await syncUp().catch(() => {});
   const { data, error } = await requireSb().rpc('create_challenge', {
@@ -333,6 +463,7 @@ export async function createChallenge(input: {
     p_plan: input.plan,
     p_mode: input.mode,
     p_description: input.description?.trim() || null,
+    p_tasks: (input.tasks ?? []).map((t) => t.trim()).filter(Boolean).slice(0, 3),
   });
   if (error) throw new Error(friendly(error));
   return data as Challenge;
@@ -448,4 +579,32 @@ export async function runningPlanItems(day: string): Promise<{ challenge: string
     }
   }
   return out;
+}
+
+// ─────────────── Daily challenge tasks ───────────────
+
+export const TASK_POINTS = 2;
+export const TASK_EXAMPLES = ['Drink 3 L water', 'Stretch 10 min', 'Walk outside 20 min', '8 hours of sleep', 'No added sugar', 'Read 10 pages'];
+
+/** Which of a challenge's tasks I've ticked off on a day (task indexes). */
+export async function myTaskChecks(challengeId: string, day: string): Promise<number[]> {
+  const me = useStore.getState().account?.userId;
+  if (!me) return [];
+  const { data, error } = await requireSb()
+    .from('task_checks')
+    .select('task_index')
+    .eq('challenge_id', challengeId)
+    .eq('user_id', me)
+    .eq('day', day);
+  if (error) throw new Error(friendly(error));
+  return (data ?? []).map((r: { task_index: number }) => r.task_index);
+}
+
+export async function setTaskDone(challengeId: string, index: number, day: string, done: boolean) {
+  const me = useStore.getState().account!.userId;
+  const c = requireSb();
+  const { error } = done
+    ? await c.from('task_checks').upsert({ challenge_id: challengeId, user_id: me, day, task_index: index })
+    : await c.from('task_checks').delete().eq('challenge_id', challengeId).eq('user_id', me).eq('day', day).eq('task_index', index);
+  if (error) throw new Error(friendly(error));
 }

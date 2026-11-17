@@ -1,4 +1,6 @@
-import { router } from 'expo-router';
+import { Redirect, router } from 'expo-router';
+import { socialEnabled } from '@/src/config';
+import { finishSetup } from '@/src/social/invite';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, Text, View } from 'react-native';
 import { Body, Button, Chip, Display, Eyebrow, Field, Heart, Italic, Row, Screen } from '@/src/components/ui';
@@ -11,7 +13,7 @@ const STEPS = 5;
 export default function Onboarding() {
   const s = useStore();
   const [step, setStep] = useState(0);
-  const [name, setName] = useState(s.profile.name);
+  const [name, setName] = useState(s.profile.name || s.account?.displayName || '');
   const [goals, setGoals] = useState<Goal[]>(s.profile.goals);
   const [units, setUnits] = useState<Units>(s.units);
   const [ft, setFt] = useState('');
@@ -51,10 +53,12 @@ export default function Onboarding() {
     const w = inputToKg(weight, units);
     if (w) s.addBody({ date: todayKey(), weightKg: w });
     s.set({ onboarded: true });
-    router.replace('/');
+    finishSetup();
   };
 
   const canNext = step === 0 ? name.trim().length > 0 : step === 1 ? goals.length > 0 : true;
+
+  if (socialEnabled() && !s.account?.username) return <Redirect href="/welcome" />;
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>

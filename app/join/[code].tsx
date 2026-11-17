@@ -13,8 +13,14 @@ export default function JoinFromLink() {
   const [err, setErr] = useState<string | null>(null);
   const ready = onboarded && !!account?.username;
 
+  // Not set up yet? Remember the code so they land in the challenge right after setup.
+  useEffect(() => {
+    if (!ready && code) useStore.setState({ pendingInvite: String(code).toUpperCase() });
+  }, [ready, code]);
+
   useEffect(() => {
     if (!ready || !code) return;
+    useStore.setState({ pendingInvite: undefined });
     joinChallenge(code)
       .then((id) => router.replace({ pathname: '/challenge/[id]', params: { id } }))
       .catch((e) => setErr((e as Error).message));
@@ -32,13 +38,13 @@ export default function JoinFromLink() {
           <Body style={{ color: colors.sand }}>{err}</Body>
         ) : !onboarded ? (
           <>
-            <Body muted>First, set up rep. — it takes a minute. Then open this link again.</Body>
-            <Button title="Set up rep." onPress={() => router.replace('/onboarding')} />
+            <Body muted>First, set up rep. — it takes a minute. You’ll join the challenge right after.</Body>
+            <Button title="Set up rep." onPress={() => router.replace('/welcome')} />
           </>
         ) : !account?.username ? (
           <>
-            <Body muted>Create an account (or sign in) to join. Then come back to this link.</Body>
-            <Button title="Create account / sign in" onPress={() => router.push('/account')} />
+            <Body muted>Create an account (or sign in) — you’ll join the challenge right after.</Body>
+            <Button title="Create account / sign in" onPress={() => router.replace('/welcome')} />
           </>
         ) : (
           <Body muted>Joining…</Body>

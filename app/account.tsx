@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, Text, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform, Text, View } from 'react-native';
 import { Body, Button, Card, Chip, Divider, Eyebrow, Field, H2, Heart, Row, Screen } from '@/src/components/ui';
 import { saveProfile, sendPasswordReset, signIn, signOut, signUp, USERNAME_RE } from '@/src/social/api';
 import { useStore } from '@/src/store';
@@ -16,7 +16,8 @@ export default function AccountScreen() {
   return <SignedIn />;
 }
 
-function SignIn() {
+/** Email + password sign up / sign in. `intro` replaces the default explanation (used on the welcome screen). */
+export function SignIn({ intro, padTop = false }: { intro?: React.ReactNode; padTop?: boolean }) {
   const [mode, setMode] = useState<'up' | 'in'>('up');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -48,14 +49,16 @@ function SignIn() {
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <Screen padTop={false} contentStyle={{ gap: space(5) }}>
-        <Row gap={2}>
-          <Heart size={16} />
-          <Eyebrow>Train together</Eyebrow>
-        </Row>
-        <Body muted>
-          An account lets you add friends, start challenges and back up your workouts. Your workouts stay on this phone too.
-        </Body>
+      <Screen padTop={padTop} contentStyle={{ gap: space(5) }}>
+        {intro ?? (
+          <>
+            <Row gap={2}>
+              <Heart size={16} />
+              <Eyebrow>Your account</Eyebrow>
+            </Row>
+            <Body muted>Your account keeps your workouts, goals and progress safe and lets you train with friends.</Body>
+          </>
+        )}
         <Row gap={2}>
           <Chip label="Create account" active={mode === 'up'} onPress={() => setMode('up')} />
           <Chip label="Sign in" active={mode === 'in'} onPress={() => setMode('in')} />
@@ -92,7 +95,8 @@ function SignIn() {
   );
 }
 
-function PickUsername({ suggested }: { suggested: string }) {
+/** Pick @username + display name. `onDone` defaults to closing the screen. */
+export function PickUsername({ suggested, onDone, padTop = false }: { suggested: string; onDone?: () => void; padTop?: boolean }) {
   const [username, setUsername] = useState(suggested.toLowerCase().replace(/[^a-z0-9_]/g, '').slice(0, 20));
   const [name, setName] = useState(suggested);
   const [busy, setBusy] = useState(false);
@@ -104,7 +108,8 @@ function PickUsername({ suggested }: { suggested: string }) {
     setErr(null);
     try {
       await saveProfile(clean, name);
-      router.back();
+      if (onDone) onDone();
+      else router.back();
     } catch (e) {
       setErr((e as Error).message);
     } finally {
@@ -113,7 +118,7 @@ function PickUsername({ suggested }: { suggested: string }) {
   };
 
   return (
-    <Screen padTop={false} contentStyle={{ gap: space(5) }}>
+    <Screen padTop={padTop} contentStyle={{ gap: space(5) }}>
       <Eyebrow>One last thing</Eyebrow>
       <H2>Pick your @username</H2>
       <Body muted>Friends find you by this. Lowercase letters, numbers and _ only.</Body>
@@ -144,19 +149,40 @@ function SignedIn() {
         <Body muted style={{ fontSize: 13 }}>{account.email}</Body>
         <Divider />
         <Body muted style={{ fontSize: 13 }}>
-          {lastSyncAt ? `Backed up ${new Date(lastSyncAt).toLocaleString()}` : 'Backing up your workouts…'}
+          {lastSyncAt ? `Backed up ${new Date(lastSyncAt).toLocaleString()}` : 'Backing up…'}
         </Body>
       </Card>
       <Button title="Edit username" variant="secondary" onPress={() => setEditing(true)} />
-      <Button
-        title="Sign out"
-        variant="danger"
-        onPress={async () => {
-          await signOut();
-          router.back();
-        }}
-      />
+      <Body muted style={{ fontSize: 13 }}>
+        Signing out removes your data from this phone. It’s saved in your account and comes back when you sign in.
+      </Body>
+      <Button title="Sign out" variant="danger" onPress={() => confirmSignOut()} />
       <View style={{ height: space(4) }} />
     </Screen>
   );
+}
+
+async function confirmSignOut() {
+  const ask = (title: string, msg: string) =>
+    new Promise<boolean>((resolve) => {
+      if (Platform.OS === 'web') {
+        // eslint-disable-next-line no-alert
+        resolve(confirm(`${title}\n\n${msg}`));
+      } else {
+        Alert.alert(title, msg, [
+          { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
+          { text: 'Sign out', style: 'destructive', onPress: () => resolve(true) },
+        ]);
+      }
+    });
+  if (!(await ask('Sign out?', 'Your data stays in your account and comes back when you sign in.'))) return;
+  if (!(await signOut())) {
+    const force = await ask(
+      'Couldn’t back up',
+      'You seem to be offline, so your latest changes aren’t saved to your account yet. Sign out anyway and lose them?',
+    );
+    if (!force) return;
+    await signOut(true);
+  }
+  router.replace('/welcome');
 }

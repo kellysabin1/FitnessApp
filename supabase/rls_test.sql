@@ -121,3 +121,40 @@ reset role; set role authenticated; select pg_temp.as_user(:'A');
 select (ends_on - starts_on + 1) as days, description from create_challenge('Custom', current_date, current_date + 39, true, true, true, true, 8000, '[]', 'any', '  Hit 4 workouts a week  ');
 \echo '--- T33 description over 500 characters (expect ERROR):'
 select create_challenge('Too long', current_date, current_date + 6, true, true, true, true, 8000, '[]', 'any', repeat('x', 501));
+
+-- ───── v5: private account data, daily tasks ─────
+reset role; set role authenticated;
+\echo '--- T34 owner writes own profile data + body entry (expect 1, 1):'
+select pg_temp.as_user(:'A');
+insert into user_data(user_id, profile, settings) values (:'A', '{"name":"Kelly","goals":["recomp"]}', '{"units":"us"}');
+insert into body_entries(user_id, id, day, weight_kg) values (:'A', 'b1', current_date, 64.5);
+select count(*) from user_data; select count(*) from body_entries;
+\echo '--- T35 friend in a shared challenge cannot see Kellys profile data or body stats (expect 0, 0):'
+select pg_temp.as_user(:'A');
+select id as pch2 from create_challenge('Shared', current_date - 1, current_date + 6, true, true, true, true, 8000, '[]') \gset
+select add_friend_to_challenge(:'pch2', :'B');
+select pg_temp.as_user(:'B'); select count(*) from user_data where user_id = :'A'; select count(*) from body_entries where user_id = :'A';
+\echo '--- T36 cannot write someone elses body stats (expect ERROR):'
+insert into body_entries(user_id, id, day, weight_kg) values (:'A', 'evil', current_date, 50);
+\echo '--- T37 challenge with tasks: blanks dropped + trimmed (expect ["Drink 3 L water", "Stretch 10 min"]):'
+select pg_temp.as_user(:'A');
+select id as tch, tasks from create_challenge('Tasks', current_date - 1, current_date + 6, true, true, true, true, 8000, '[]', 'any', null,
+  '["  Drink 3 L water ", "", "Stretch 10 min"]') \gset
+select :'tasks';
+select add_friend_to_challenge(:'tch', :'B');
+\echo '--- T38 four tasks / overlong task (expect 2 ERRORs):'
+select create_challenge('Too many', current_date, current_date + 6, true, true, true, true, 8000, '[]', 'any', null, '["a","b","c","d"]');
+select create_challenge('Too long', current_date, current_date + 6, true, true, true, true, 8000, '[]', 'any', null, jsonb_build_array(repeat('x', 61)));
+\echo '--- T39 tick tasks today (expect 2 rows); task 3 does not exist / 5 days ago / for someone else (expect 3 ERRORs):'
+insert into task_checks(challenge_id, user_id, day, task_index) values (:'tch', :'A', current_date, 0), (:'tch', :'A', current_date, 1);
+select count(*) from task_checks where challenge_id = :'tch';
+insert into task_checks(challenge_id, user_id, day, task_index) values (:'tch', :'A', current_date, 2);
+insert into task_checks(challenge_id, user_id, day, task_index) values (:'tch', :'A', current_date - 5, 0);
+insert into task_checks(challenge_id, user_id, day, task_index) values (:'tch', :'B', current_date, 0);
+\echo '--- T40 stranger cannot see or tick (expect 0, then ERROR):'
+select pg_temp.as_user(:'C'); select count(*) from task_checks;
+insert into task_checks(challenge_id, user_id, day, task_index) values (:'tch', :'C', current_date, 0);
+\echo '--- T41 leaderboard counts tasks (expect kelly tasks_done 2, pts_tasks 4, total includes them):'
+select pg_temp.as_user(:'A');
+select username, tasks_done, pts_tasks, points, pts_workouts + pts_steps + pts_streaks + pts_plan + pts_tasks = points as adds_up
+from challenge_leaderboard(:'tch') where username = 'kelly';

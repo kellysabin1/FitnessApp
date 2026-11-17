@@ -89,6 +89,8 @@ export interface BodyEntry {
   bodyFatPct?: number;
   waistCm?: number;
   hipsCm?: number;
+  /** last local edit (ISO) — used to sync */
+  updatedAt?: string;
 }
 
 export interface HealthDay {
@@ -145,6 +147,14 @@ interface State {
   lastSyncAt?: string;
   /** Workout ids deleted locally that still need deleting from the account. */
   pendingDeletes: string[];
+  /** Body entry ids deleted locally that still need deleting from the account. */
+  pendingBodyDeletes: string[];
+  /** Invite code opened before the person had an account — joined right after setup. */
+  pendingInvite?: string;
+  /** Account id this device's data belongs to (so a different person signing in starts clean). */
+  dataOwner?: string;
+  /** Last local change to profile, units or custom exercises (ISO) — used to sync. */
+  userDataUpdatedAt?: string;
   /** Result of the last coach connection check. */
   coachStatus?: 'ok' | 'unauthorized' | 'unreachable' | 'no_access';
 
@@ -169,6 +179,7 @@ interface State {
   resetAll: () => void;
 }
 
+const now = () => new Date().toISOString();
 export const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
 export const todayKey = (d = new Date()) => {
   const y = d.getFullYear();
@@ -203,6 +214,9 @@ const initial = {
   customExercises: [] as ExerciseDef[],
   lastSyncAt: undefined,
   pendingDeletes: [] as string[],
+  pendingBodyDeletes: [] as string[],
+  dataOwner: undefined as string | undefined,
+  userDataUpdatedAt: undefined as string | undefined,
   server: {
     url: process.env.EXPO_PUBLIC_COACH_URL ?? '',
     token: process.env.EXPO_PUBLIC_COACH_TOKEN ?? '',
@@ -213,8 +227,10 @@ export const useStore = create<State>()(
   persist(
     (set, get) => ({
       ...initial,
-      set: (patch) => set(patch),
-      updateProfile: (patch) => set({ profile: { ...get().profile, ...patch } }),
+      set: (patch) =>
+        // changing units counts as a profile/settings change for syncing
+        set('units' in patch && patch.units !== get().units ? { ...patch, userDataUpdatedAt: now() } : patch),
+      updateProfile: (patch) => set({ profile: { ...get().profile, ...patch }, userDataUpdatedAt: now() }),
       startWorkout: (title, planItem) => {
         const id = uid();
         const w: Workout = {
@@ -269,11 +285,15 @@ export const useStore = create<State>()(
         // one entry per day: merge into an existing entry for the same date
         const existing = get().body.find((b) => b.date === e.date);
         const merged = existing
-          ? get().body.map((b) => (b.date === e.date ? { ...b, ...stripUndefined(e) } : b))
-          : [...get().body, { ...e, id: uid() }];
+          ? get().body.map((b) => (b.date === e.date ? { ...b, ...stripUndefined(e), updatedAt: now() } : b))
+          : [...get().body, { ...e, id: uid(), updatedAt: now() }];
         set({ body: merged.sort((a, b) => a.date.localeCompare(b.date)) });
       },
-      deleteBody: (id) => set({ body: get().body.filter((b) => b.id !== id) }),
+      deleteBody: (id) =>
+        set({
+          body: get().body.filter((b) => b.id !== id),
+          pendingBodyDeletes: get().account ? [...get().pendingBodyDeletes, id] : get().pendingBodyDeletes,
+        }),
       upsertHealth: (days) => {
         const next = { ...get().health };
         for (const d of days) next[`${d.source}:${d.date}`] = { ...next[`${d.source}:${d.date}`], ...stripUndefined(d) } as HealthDay;
@@ -284,10 +304,13 @@ export const useStore = create<State>()(
       clearCoach: () => set({ coach: [] }),
       addCustomExercise: (e) => {
         const rest = (get().customExercises ?? []).filter((x) => x.name.toLowerCase() !== e.name.toLowerCase());
-        set({ customExercises: [...rest, { ...e, custom: true }].sort((a, b) => a.name.localeCompare(b.name)) });
+        set({
+          customExercises: [...rest, { ...e, custom: true }].sort((a, b) => a.name.localeCompare(b.name)),
+          userDataUpdatedAt: now(),
+        });
       },
       deleteCustomExercise: (name) =>
-        set({ customExercises: (get().customExercises ?? []).filter((x) => x.name !== name) }),
+        set({ customExercises: (get().customExercises ?? []).filter((x) => x.name !== name), userDataUpdatedAt: now() }),
       resetAll: () => set({ ...initial }),
     }),
     {

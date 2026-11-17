@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Bars, Ring } from '@/src/components/charts';
 import { Body, Button, Card, Display, Eyebrow, H2, Heart, Icon, Italic, Row, SectionHeader, Stat } from '@/src/components/ui';
 import { syncHealth } from '@/src/health/sync';
+import { TodayTasks } from '@/src/social/TodayTasks';
 import { lastNDates, relativeDay, setsDone, weekStreak, workoutDurationMin, workoutsThisWeek, latestBody } from '@/src/stats';
 import { healthForDate, todayKey, useStore } from '@/src/store';
 import { colors, fonts, gradients, space } from '@/src/theme';
@@ -129,6 +130,8 @@ export default function Today() {
             <Button title="Log one I already did" variant="ghost" small style={{ marginTop: space(2) }} onPress={() => router.push('/log-past')} />
           </Card>
         )}
+
+        <TodayTasks />
 
         {/* Coach focus */}
         <SectionHeader title="Coach’s note" action={s.plan ? 'Open' : undefined} onAction={() => router.push('/coach')} />

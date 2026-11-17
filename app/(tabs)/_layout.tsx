@@ -2,6 +2,7 @@ import { Redirect, Tabs } from 'expo-router';
 import { Platform } from 'react-native';
 import { Icon, IconName } from '@/src/components/ui';
 import { useStore } from '@/src/store';
+import { socialEnabled } from '@/src/config';
 import { colors, fonts } from '@/src/theme';
 
 const tab = (title: string, icon: IconName, activeIcon: IconName) => ({
@@ -13,6 +14,9 @@ const tab = (title: string, icon: IconName, activeIcon: IconName) => ({
 
 export default function TabLayout() {
   const onboarded = useStore((s) => s.onboarded);
+  const signedIn = useStore((s) => !!s.account?.username);
+  // An account is required for the whole app (when the account server is configured).
+  if (socialEnabled() && !signedIn) return <Redirect href="/welcome" />;
   if (!onboarded) return <Redirect href="/onboarding" />;
 
   return (

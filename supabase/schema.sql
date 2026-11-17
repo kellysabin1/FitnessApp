@@ -94,6 +94,13 @@ do $$ begin
   alter table public.challenges add constraint challenges_mode_check check (mode in ('any', 'plan'));
 exception when duplicate_object then null; end $$;
 
+-- v5: up to 3 daily tasks per challenge, e.g. ["Drink 3 L water", "Stretch 10 min"]
+alter table public.challenges add column if not exists tasks jsonb not null default '[]'::jsonb;
+do $$ begin
+  alter table public.challenges add constraint challenges_tasks_max3
+    check (jsonb_typeof(tasks) = 'array' and jsonb_array_length(tasks) <= 3);
+exception when duplicate_object then null; end $$;
+
 -- v4: optional goal / house rules written by the creator
 alter table public.challenges add column if not exists description text;
 do $$ begin
@@ -156,24 +163,34 @@ create policy "leave challenge" on public.challenge_members
 
 drop function if exists public.create_challenge(text, date, date, boolean, boolean, boolean, boolean, integer, jsonb);
 drop function if exists public.create_challenge(text, date, date, boolean, boolean, boolean, boolean, integer, jsonb, text);
+drop function if exists public.create_challenge(text, date, date, boolean, boolean, boolean, boolean, integer, jsonb, text, text);
 create or replace function public.create_challenge(
   p_name text, p_starts_on date, p_ends_on date,
   p_score_workouts boolean, p_score_steps boolean, p_score_streaks boolean, p_score_plan boolean,
-  p_step_goal integer, p_plan jsonb, p_mode text default 'any', p_description text default null
+  p_step_goal integer, p_plan jsonb, p_mode text default 'any', p_description text default null,
+  p_tasks jsonb default '[]'::jsonb
 ) returns public.challenges
 language plpgsql security definer set search_path = public as $$
-declare c challenges;
+declare c challenges; v_tasks jsonb;
 begin
+  -- daily tasks: up to 3 non-empty strings of at most 60 characters, trimmed
+  select coalesce(jsonb_agg(trim(t)), '[]'::jsonb) into v_tasks
+  from jsonb_array_elements_text(coalesce(p_tasks, '[]'::jsonb)) t
+  where trim(t) <> '';
+  if jsonb_array_length(v_tasks) > 3 then raise exception 'Up to 3 daily tasks per challenge'; end if;
+  if exists (select 1 from jsonb_array_elements_text(v_tasks) t where char_length(t) > 60) then
+    raise exception 'Keep each daily task under 60 characters';
+  end if;
   if auth.uid() is null then raise exception 'not signed in'; end if;
   if p_mode = 'plan' and jsonb_array_length(coalesce(p_plan, '[]'::jsonb)) = 0 then
     raise exception 'A plan-only challenge needs at least one plan workout';
   end if;
   insert into challenges (name, created_by, starts_on, ends_on, score_workouts, score_steps,
-                          score_streaks, score_plan, step_goal, plan, mode, description)
+                          score_streaks, score_plan, step_goal, plan, mode, description, tasks)
   values (p_name, auth.uid(), p_starts_on, p_ends_on, p_score_workouts, p_score_steps,
           -- in plan-only challenges the plan *is* the workout score, so no separate bonus
           p_score_streaks, p_score_plan and p_mode <> 'plan', p_step_goal, coalesce(p_plan, '[]'::jsonb), p_mode,
-          nullif(trim(p_description), ''))
+          nullif(trim(p_description), ''), v_tasks)
   returning * into c;
   insert into challenge_members (challenge_id, user_id) values (c.id, auth.uid());
   insert into activity (challenge_id, user_id, kind, payload) values (c.id, auth.uid(), 'created', '{}'::jsonb);
@@ -333,7 +350,8 @@ returns table (
   user_id uuid, username text, display_name text,
   workouts integer, steps bigint, streak_days integer, plan_done integer,
   current_streak integer, points integer,
-  pts_workouts integer, pts_steps integer, pts_streaks integer, pts_plan integer, goal_days integer
+  pts_workouts integer, pts_steps integer, pts_streaks integer, pts_plan integer, goal_days integer,
+  tasks_done integer, pts_tasks integer
 )
 language plpgsql stable security definer set search_path = public as $$
 declare c challenges;
@@ -396,6 +414,15 @@ begin
            sum(case when c.score_plan then r.plan_n * 5 else 0 end)::int as pts_plan
     from runs r group by r.user_id
   ),
+  tk as (
+    -- daily tasks: 2 points per task ticked off, per day, inside the challenge dates
+    select tc.user_id, count(*)::int as tasks_done
+    from task_checks tc
+    where tc.challenge_id = p_challenge
+      and tc.day between c.starts_on and c.ends_on
+      and tc.task_index < jsonb_array_length(c.tasks)
+    group by tc.user_id
+  ),
   cur as (
     -- current streak: consecutive active days ending today or yesterday
     select a.user_id, count(*)::int as current_streak
@@ -413,21 +440,22 @@ begin
   select m.user_id, m.username, m.display_name,
          coalesce(t.workouts, 0), coalesce(t.steps, 0), coalesce(t.streak_days, 0),
          coalesce(t.plan_done, 0), coalesce(cur.current_streak, 0),
-         coalesce(t.pts_workouts + t.pts_steps + t.pts_streaks + t.pts_plan, 0),  -- total = sum of parts, always
+         coalesce(t.pts_workouts + t.pts_steps + t.pts_streaks + t.pts_plan, 0) + coalesce(tk.tasks_done * 2, 0),  -- total = sum of parts, always
          coalesce(t.pts_workouts, 0), coalesce(t.pts_steps, 0), coalesce(t.pts_streaks, 0), coalesce(t.pts_plan, 0),
-         coalesce(t.goal_days, 0)
+         coalesce(t.goal_days, 0), coalesce(tk.tasks_done, 0), coalesce(tk.tasks_done * 2, 0)
   from members m
   left join totals t on t.user_id = m.user_id
   left join cur on cur.user_id = m.user_id
-  order by coalesce(t.pts_workouts + t.pts_steps + t.pts_streaks + t.pts_plan, 0) desc, m.username;
+  left join tk on tk.user_id = m.user_id
+  order by coalesce(t.pts_workouts + t.pts_steps + t.pts_streaks + t.pts_plan, 0) + coalesce(tk.tasks_done * 2, 0) desc, m.username;
 end $$;
 
 -- Only signed-in users may call these (Supabase grants functions to everyone by default).
-revoke execute on function public.create_challenge(text, date, date, boolean, boolean, boolean, boolean, integer, jsonb, text, text) from public, anon;
+revoke execute on function public.create_challenge(text, date, date, boolean, boolean, boolean, boolean, integer, jsonb, text, text, jsonb) from public, anon;
 revoke execute on function public.join_challenge(text) from public, anon;
 revoke execute on function public.add_friend_to_challenge(uuid, uuid) from public, anon;
 revoke execute on function public.challenge_leaderboard(uuid) from public, anon;
-grant execute on function public.create_challenge(text, date, date, boolean, boolean, boolean, boolean, integer, jsonb, text, text) to authenticated;
+grant execute on function public.create_challenge(text, date, date, boolean, boolean, boolean, boolean, integer, jsonb, text, text, jsonb) to authenticated;
 grant execute on function public.join_challenge(text) to authenticated;
 grant execute on function public.add_friend_to_challenge(uuid, uuid) to authenticated;
 grant execute on function public.challenge_leaderboard(uuid) to authenticated;
@@ -471,3 +499,71 @@ end $$;
 
 -- Give someone coach access (run in SQL editor, replace the username):
 --   update public.profiles set coach_enabled = true where username = 'your_username';
+
+-- ───────────────────────── Daily challenge tasks (v5) ─────────────────────────
+create table if not exists public.task_checks (
+  challenge_id uuid not null references public.challenges (id) on delete cascade,
+  user_id uuid not null references public.profiles (id) on delete cascade,
+  day date not null,
+  task_index smallint not null check (task_index between 0 and 2),
+  created_at timestamptz not null default now(),
+  primary key (challenge_id, user_id, day, task_index)
+);
+alter table public.task_checks enable row level security;
+
+-- a check-off is valid if: you're a member, the task exists, the day is inside the challenge,
+-- and it's today or yesterday (time-zone slack; no back-filling old days)
+create or replace function public.task_check_ok(p_challenge uuid, p_index integer, p_day date) returns boolean
+language sql stable security definer set search_path = public as $$
+  select exists (
+    select 1 from challenges c
+    where c.id = p_challenge
+      and is_member(p_challenge, auth.uid())
+      and p_index < jsonb_array_length(c.tasks)
+      and p_day between c.starts_on and c.ends_on
+      and p_day between current_date - 1 and current_date + 1
+  );
+$$;
+
+drop policy if exists "members see task checks" on public.task_checks;
+create policy "members see task checks" on public.task_checks
+  for select to authenticated using (public.is_member(challenge_id));
+drop policy if exists "tick own tasks" on public.task_checks;
+create policy "tick own tasks" on public.task_checks
+  for insert to authenticated
+  with check (user_id = auth.uid() and public.task_check_ok(challenge_id, task_index, day));
+drop policy if exists "untick own tasks" on public.task_checks;
+create policy "untick own tasks" on public.task_checks
+  for delete to authenticated
+  using (user_id = auth.uid() and day between current_date - 1 and current_date + 1);
+
+-- ───────────────────────── Private account data (v5) ─────────────────────────
+-- Everything that makes rep. "yours" on a new phone. Owner-only: nobody else — not even
+-- challenge-mates — can read these rows. Body stats live here and stay private.
+create table if not exists public.user_data (
+  user_id uuid primary key references public.profiles (id) on delete cascade,
+  profile jsonb not null default '{}'::jsonb check (octet_length(profile::text) <= 20000),
+  settings jsonb not null default '{}'::jsonb check (octet_length(settings::text) <= 5000),
+  custom_exercises jsonb not null default '[]'::jsonb check (octet_length(custom_exercises::text) <= 100000),
+  updated_at timestamptz not null default now()
+);
+alter table public.user_data enable row level security;
+drop policy if exists "owner only" on public.user_data;
+create policy "owner only" on public.user_data
+  for all to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
+
+create table if not exists public.body_entries (
+  user_id uuid not null references public.profiles (id) on delete cascade,
+  id text not null,
+  day date not null,
+  weight_kg numeric check (weight_kg between 20 and 400),
+  body_fat_pct numeric check (body_fat_pct between 1 and 80),
+  waist_cm numeric check (waist_cm between 30 and 300),
+  hips_cm numeric check (hips_cm between 30 and 300),
+  updated_at timestamptz not null default now(),
+  primary key (user_id, id)
+);
+alter table public.body_entries enable row level security;
+drop policy if exists "owner only" on public.body_entries;
+create policy "owner only" on public.body_entries
+  for all to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());

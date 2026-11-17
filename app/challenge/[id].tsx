@@ -17,8 +17,10 @@ import {
   REACTIONS,
   toggleReaction,
   getChallenge,
+  TASK_POINTS,
 } from '@/src/social/api';
 import { notifyActivity } from '@/src/social/push';
+import { DailyTasks } from '@/src/social/DailyTasks';
 import { Person } from '@/src/social/Person';
 import { shareInvite } from '@/src/social/share';
 import { healthForDate, todayKey, useStore } from '@/src/store';
@@ -229,6 +231,14 @@ export default function ChallengeScreen() {
           ))}
         </Card>
 
+        {/* Daily tasks */}
+        {c.tasks?.length && running ? (
+          <>
+            <SectionHeader title="Today’s tasks" />
+            <DailyTasks c={c} onChanged={load} />
+          </>
+        ) : null}
+
         {/* Steps */}
         {c.score_steps && running ? (
           <>
@@ -312,6 +322,7 @@ function Breakdown({ r, c }: { r: LeaderRow; c: Challenge }) {
     },
     c.score_streaks && { label: 'Streaks', detail: `${r.streak_days} streak day${r.streak_days === 1 ? '' : 's'} × 3`, pts: r.pts_streaks },
     !planOnly && c.score_plan && c.plan.length > 0 && { label: 'Plan bonus', detail: `${r.plan_done} × 5`, pts: r.pts_plan },
+    (c.tasks?.length ?? 0) > 0 && { label: 'Daily tasks', detail: `${r.tasks_done} × ${TASK_POINTS}`, pts: r.pts_tasks },
   ].filter(Boolean) as { label: string; detail: string; pts: number }[];
   return (
     <View style={{ marginTop: space(3), marginLeft: 22 + space(3), padding: space(3), borderRadius: radius.md, backgroundColor: colors.bgRaised, gap: space(2) }}>
@@ -343,6 +354,7 @@ function ScoringRules({ c }: { c: Challenge }) {
       `Streaks: 3 points for each active day in a row after the first. Active = ${planOnly ? 'a plan workout' : 'a workout'}${c.score_steps ? ' or hitting the step goal' : ''}.`,
     !planOnly && c.score_plan && c.plan.length > 0 && 'Group plan bonus: +5 for each workout from the plan.',
     planOnly && 'Only workouts from the group plan count toward points.',
+    (c.tasks?.length ?? 0) > 0 && `Daily tasks: ${TASK_POINTS} points for each task you tick off each day (${c.tasks.join(', ')}).`,
   ].filter(Boolean) as string[];
   return (
     <Card style={{ marginBottom: space(3), gap: space(2) }}>

@@ -2,7 +2,7 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { Body, Button, Chip, Field, Icon, IconName, Row, Screen } from '@/src/components/ui';
-import { type ChallengeMode, createChallenge, type PlanItem } from '@/src/social/api';
+import { type ChallengeMode, createChallenge, type PlanItem, TASK_EXAMPLES, TASK_POINTS } from '@/src/social/api';
 import { PlanBuilder } from '@/src/social/PlanBuilder';
 import { todayKey } from '@/src/store';
 import { colors, fonts, radius, space } from '@/src/theme';
@@ -27,6 +27,8 @@ export default function NewChallenge() {
   const [days, setDays] = useState(14);
   const [customDays, setCustomDays] = useState<string | null>(null); // non-null = custom length
   const [description, setDescription] = useState('');
+  const [tasks, setTasks] = useState<string[]>([]);
+  const [taskText, setTaskText] = useState('');
   const [scoring, setScoring] = useState({ workouts: true, steps: true, streaks: true, plan: true });
   const [stepGoal, setStepGoal] = useState('8000');
   const [plan, setPlan] = useState<PlanItem[]>([]);
@@ -74,6 +76,7 @@ export default function NewChallenge() {
         stepGoal: scoring.steps ? goal : 8000,
         plan,
         description,
+        tasks,
       });
       router.replace({ pathname: '/challenge/[id]', params: { id: c.id, fresh: '1' } });
     } catch (e) {
@@ -117,6 +120,47 @@ export default function NewChallenge() {
       <View style={{ gap: space(2) }}>
         <Text style={label}>{planOnly ? 'The plan — only these workouts count' : 'Shared plan (optional, +5 bonus each)'}</Text>
         <PlanBuilder value={plan} onChange={setPlan} />
+      </View>
+
+      <View style={{ gap: space(2) }}>
+        <Text style={label}>Add daily tasks? (optional, up to 3)</Text>
+        <Body muted style={{ fontSize: 13 }}>Small habits everyone ticks off each day — +{TASK_POINTS} points each.</Body>
+        {tasks.map((t) => (
+          <Row key={t} style={{ justifyContent: 'space-between', paddingVertical: space(1) }}>
+            <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 15, color: colors.cream, flex: 1 }}>• {t}</Text>
+            <Pressable onPress={() => setTasks((x) => x.filter((y) => y !== t))} hitSlop={8} accessibilityLabel={`Remove ${t}`}>
+              <Icon name="close" size={16} color={colors.textMuted} />
+            </Pressable>
+          </Row>
+        ))}
+        {tasks.length < 3 ? (
+          <>
+            <Row gap={2} style={{ flexWrap: 'wrap' }}>
+              {TASK_EXAMPLES.filter((e) => !tasks.includes(e)).map((e) => (
+                <Chip key={e} icon="add" label={e} onPress={() => setTasks((x) => (x.length < 3 ? [...x, e] : x))} />
+              ))}
+            </Row>
+            <Row gap={2}>
+              <Field
+                style={{ flex: 1 }}
+                value={taskText}
+                onChangeText={(t) => setTaskText(t.slice(0, 60))}
+                placeholder="Write your own"
+              />
+              <Button
+                small
+                title="Add"
+                disabled={!taskText.trim() || tasks.some((t) => t.toLowerCase() === taskText.trim().toLowerCase())}
+                onPress={() => {
+                  setTasks((x) => (x.length < 3 ? [...x, taskText.trim()] : x));
+                  setTaskText('');
+                }}
+              />
+            </Row>
+          </>
+        ) : (
+          <Body muted style={{ fontSize: 12 }}>That’s the max of 3 — remove one to swap it.</Body>
+        )}
       </View>
 
       <Section label="Starts">
