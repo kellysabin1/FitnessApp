@@ -1,26 +1,32 @@
 // rep. coach server.
-// Holds the secrets the phone app must never contain: your Anthropic API key and
-// your Oura client secret. The app talks to this server with a shared APP_TOKEN.
+// Holds the secrets the phone app must never contain: your Anthropic API key, the Supabase
+// service key and your Oura client secret.
+// Coach access: a signed-in rep. user whose profile has coach_enabled = true (per-person, revocable).
+// Legacy: the shared APP_TOKEN still works while ALLOW_APP_TOKEN isn't "false" (being retired).
 import Anthropic from '@anthropic-ai/sdk';
 import { betaZodOutputFormat } from '@anthropic-ai/sdk/helpers/beta/zod';
 import express, { type NextFunction, type Request, type Response } from 'express';
 import { timingSafeEqual } from 'node:crypto';
 import { z } from 'zod';
 import { mountPushRoutes } from './push.js';
+import { ipRateLimit, LIMITS, sendDailyLimit, takeLegacyQuota, takeUserQuota, type CoachKind } from './limits.js';
+import { db, supabaseConfigured, userFromRequest } from './supabase.js';
 
 const PORT = Number(process.env.PORT ?? 8787);
 const APP_TOKEN = process.env.APP_TOKEN ?? '';
+const ALLOW_APP_TOKEN = !!APP_TOKEN && process.env.ALLOW_APP_TOKEN !== 'false';
 const MODEL = process.env.COACH_MODEL ?? 'claude-opus-5-5';
 const OURA_CLIENT_ID = process.env.OURA_CLIENT_ID ?? '';
 const OURA_CLIENT_SECRET = process.env.OURA_CLIENT_SECRET ?? '';
 
-if (!APP_TOKEN) {
-  console.error('APP_TOKEN is required — set it to a long random password.');
+if (!ALLOW_APP_TOKEN && !supabaseConfigured()) {
+  console.error('Nothing can reach the coach: set SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY (or APP_TOKEN).');
   process.exit(1);
 }
 
 const client = new Anthropic(); // reads ANTHROPIC_API_KEY
 const app = express();
+app.set('trust proxy', 1); // Render sits in front of us; use the real client IP for rate limits
 app.use(express.json({ limit: '1mb' }));
 
 // Allow the web preview (Expo web) to call us. The bearer token is the real gate.
@@ -32,6 +38,8 @@ app.use((req, res, next) => {
   next();
 });
 
+app.use(ipRateLimit);
+
 app.get('/health', (_req, res) => {
   res.json({ ok: true });
 });
@@ -39,19 +47,59 @@ app.get('/health', (_req, res) => {
 // Friend notifications use the person's rep. login instead of the coach password.
 mountPushRoutes(app);
 
-function requireToken(req: Request, res: Response, next: NextFunction) {
+// ---------------- Who is calling? ----------------
+
+type Caller = { kind: 'user'; userId: string } | { kind: 'legacy' };
+
+function legacyTokenMatches(req: Request) {
+  if (!ALLOW_APP_TOKEN) return false;
   const got = Buffer.from((req.headers.authorization ?? '').replace(/^Bearer\s+/i, ''));
   const want = Buffer.from(APP_TOKEN);
-  if (got.length !== want.length || !timingSafeEqual(got, want)) {
-    return void res.status(401).json({ error: 'Wrong app password — check You → Coach server.' });
+  return got.length === want.length && timingSafeEqual(got, want);
+}
+
+/** Legacy coach password, or any signed-in rep. user. (Oura sign-in, connection check.) */
+async function requireAppOrUser(req: Request, res: Response, next: NextFunction) {
+  if (legacyTokenMatches(req)) return next();
+  if (await userFromRequest(req)) return next();
+  res.status(401).json({ error: 'Sign in again (or check the coach password).', code: 'signed_out' });
+}
+
+/** Coach routes: a signed-in user with coach access, or the legacy coach password. */
+async function requireCoach(req: Request, res: Response, next: NextFunction) {
+  if (legacyTokenMatches(req)) {
+    res.locals.caller = { kind: 'legacy' } satisfies Caller;
+    return next();
   }
+  const user = await userFromRequest(req);
+  if (!user) return void res.status(401).json({ error: 'Sign in to use the coach.', code: 'signed_out' });
+  const { data } = await db().from('profiles').select('coach_enabled').eq('id', user.id).maybeSingle();
+  if (!data?.coach_enabled) {
+    return void res.status(403).json({ error: 'Your account doesn’t have coach access yet.', code: 'no_access' });
+  }
+  res.locals.caller = { kind: 'user', userId: user.id } satisfies Caller;
   next();
 }
-app.use(requireToken);
+
+/** Count one use against today's limit; sends the 429 itself and returns false when over. */
+async function takeQuota(req: Request, res: Response, kind: CoachKind) {
+  const caller = res.locals.caller as Caller;
+  const ok = caller.kind === 'user' ? await takeUserQuota(caller.userId, kind) : takeLegacyQuota(req.ip ?? 'unknown', kind);
+  if (!ok) sendDailyLimit(res, kind);
+  return ok;
+}
 
 // Lets the app confirm the URL + password are right ("Save & test").
-app.get('/auth-check', (_req, res) => {
+app.get('/auth-check', requireAppOrUser, (_req, res) => {
   res.json({ ok: true });
+});
+
+// Lets a signed-in app know whether to show the coach or "ask for access".
+app.get('/coach/access', async (req, res) => {
+  const user = await userFromRequest(req);
+  if (!user) return void res.status(401).json({ error: 'Sign in again.', code: 'signed_out' });
+  const { data } = await db().from('profiles').select('coach_enabled').eq('id', user.id).maybeSingle();
+  res.json({ enabled: !!data?.coach_enabled, limits: { chats: LIMITS.dailyChats, plans: LIMITS.dailyPlans } });
 });
 
 // ---------------- Coach ----------------
@@ -85,9 +133,14 @@ const ChatBody = z.object({
     .default([]),
 });
 
-app.post('/coach/chat', async (req, res) => {
+app.post('/coach/chat', requireCoach, async (req, res) => {
   const parsed = ChatBody.safeParse(req.body);
   if (!parsed.success) return void res.status(400).json({ error: 'Bad request' });
+  try {
+    if (!(await takeQuota(req, res, 'chat'))) return;
+  } catch (e) {
+    return void handleError(e, res);
+  }
   const { context, message, history } = parsed.data;
 
   // History must alternate and start with a user turn.
@@ -143,10 +196,11 @@ const Plan = z.object({
   recovery: z.string().describe('1–2 sentences of recovery guidance based on sleep/HRV/readiness.'),
 });
 
-app.post('/coach/plan', async (req, res) => {
+app.post('/coach/plan', requireCoach, async (req, res) => {
   const parsed = z.object({ context: z.string().max(60_000) }).safeParse(req.body);
   if (!parsed.success) return void res.status(400).json({ error: 'Bad request' });
   try {
+    if (!(await takeQuota(req, res, 'plan'))) return;
     const response = await client.beta.messages.parse({
       model: MODEL,
       max_tokens: 16000,
@@ -208,7 +262,7 @@ async function ouraToken(params: Record<string, string>) {
   return json;
 }
 
-app.post('/oura/token', async (req, res) => {
+app.post('/oura/token', requireAppOrUser, async (req, res) => {
   const p = z.object({ code: z.string(), redirectUri: z.string() }).safeParse(req.body);
   if (!p.success) return void res.status(400).json({ error: 'Bad request' });
   try {
@@ -218,7 +272,7 @@ app.post('/oura/token', async (req, res) => {
   }
 });
 
-app.post('/oura/refresh', async (req, res) => {
+app.post('/oura/refresh', requireAppOrUser, async (req, res) => {
   const p = z.object({ refreshToken: z.string() }).safeParse(req.body);
   if (!p.success) return void res.status(400).json({ error: 'Bad request' });
   try {

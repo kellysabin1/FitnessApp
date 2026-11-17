@@ -55,7 +55,7 @@ export default function Progress() {
     <Screen>
       <Eyebrow>Progress</Eyebrow>
       <Display style={{ marginTop: space(2) }}>
-        Proof you’re <Italic>glowing up.</Italic>
+        Proof it’s <Italic>working.</Italic>
       </Display>
 
       <SectionHeader title="Weight" action="+ Log" onAction={() => router.push('/log-body')} />

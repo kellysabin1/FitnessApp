@@ -347,6 +347,14 @@ export async function leaveChallenge(challengeId: string) {
   if (error) throw new Error(friendly(error));
 }
 
+/** Creator only: deletes the challenge for everyone (members, feed and reactions go with it). */
+export async function deleteChallenge(challengeId: string) {
+  const { data, error } = await requireSb().from('challenges').delete().eq('id', challengeId).select('id');
+  if (error) throw new Error(friendly(error));
+  // Row-level security silently deletes nothing if you're not the creator — surface that clearly.
+  if (!data?.length) throw new Error('Only the person who created this challenge can delete it.');
+}
+
 export async function leaderboard(challengeId: string): Promise<LeaderRow[]> {
   const { data, error } = await requireSb().rpc('challenge_leaderboard', { p_challenge: challengeId });
   if (error) throw new Error(friendly(error));

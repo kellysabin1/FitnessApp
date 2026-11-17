@@ -41,6 +41,8 @@ export interface Profile {
 }
 
 export interface SetEntry {
+  /** warm-up sets don't count toward volume, PRs, set counts, comparisons or challenges */
+  warmup?: boolean;
   reps?: number;
   weightKg?: number;
   seconds?: number;
@@ -142,7 +144,7 @@ interface State {
   /** Workout ids deleted locally that still need deleting from the account. */
   pendingDeletes: string[];
   /** Result of the last coach connection check. */
-  coachStatus?: 'ok' | 'unauthorized' | 'unreachable';
+  coachStatus?: 'ok' | 'unauthorized' | 'unreachable' | 'no_access';
 
   // actions
   set: (patch: Partial<State>) => void;

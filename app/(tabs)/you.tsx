@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Alert, Platform, Text, View } from 'react-native';
 import { Body, Button, Card, Chip, Display, Divider, Eyebrow, Field, H2, Icon, IconName, Italic, Row, Screen, SectionHeader } from '@/src/components/ui';
 import { appleHealthSupported, connectAppleHealth } from '@/src/health/appleHealth';
@@ -6,7 +6,7 @@ import { connectOura, OURA_CLIENT_ID } from '@/src/health/oura';
 import { syncHealth } from '@/src/health/sync';
 import { socialEnabled } from '@/src/config';
 import { router } from 'expo-router';
-import { testCoachConnection } from '@/src/api';
+import { checkCoachAccess, type CoachAccess, testCoachConnection } from '@/src/api';
 import { Experience, Goal, GOAL_LABEL, useStore } from '@/src/store';
 import { colors, fonts, space } from '@/src/theme';
 import { cmToFtIn, ftInToCm, inputToKg, kgToInput, weightLabel } from '@/src/units';
@@ -51,7 +51,7 @@ export default function You() {
     <Screen>
       <Eyebrow>You</Eyebrow>
       <Display style={{ marginTop: space(2) }}>
-        {p.name || 'Your'} <Italic>{p.name ? 'era.' : 'profile.'}</Italic>
+        Your <Italic>profile.</Italic>
       </Display>
 
       {socialEnabled() ? (
@@ -272,8 +272,37 @@ const styles = {
   connSub: { fontFamily: fonts.body, fontSize: 12, lineHeight: 17, color: colors.textMuted, marginTop: 2 },
 };
 
-/** Coach link + password, with an explicit Save & test so you know it worked. */
+/** Signed in: the coach uses your account. Signed out: legacy coach link + password. */
 function CoachSettings() {
+  const signedIn = useStore((st) => !!st.account?.username) && socialEnabled();
+  return signedIn ? <AccountCoachStatus /> : <LegacyCoachSettings />;
+}
+
+function AccountCoachStatus() {
+  const [access, setAccess] = useState<CoachAccess | 'checking'>('checking');
+  useEffect(() => {
+    checkCoachAccess().then(setAccess);
+  }, []);
+  const text =
+    access === 'checking'
+      ? 'Checking…'
+      : access === 'enabled'
+        ? 'On ✓ — the coach uses your rep. account. Nothing to set up.'
+        : access === 'no_access'
+          ? 'Not switched on for your account yet. Ask the person who shared rep. with you.'
+          : access === 'signed_out'
+            ? 'Your sign-in expired — sign in again.'
+            : 'Can’t reach the coach right now. Check your internet.';
+  return (
+    <Card style={{ gap: space(2) }}>
+      <Text style={styles.connTitle}>AI coach</Text>
+      <Body muted style={{ fontSize: 13, color: access === 'enabled' ? colors.latte : colors.textMuted }}>{text}</Body>
+    </Card>
+  );
+}
+
+/** Legacy: coach link + shared password, with an explicit Save & test. Being retired. */
+function LegacyCoachSettings() {
   const server = useStore((st) => st.server);
   const status = useStore((st) => st.coachStatus);
   const set = useStore((st) => st.set);
@@ -313,7 +342,7 @@ function CoachSettings() {
   return (
     <Card style={{ gap: space(4) }}>
       <Body muted style={{ fontSize: 13 }}>
-        Paste the coach link and coach password. If someone shared rep. with you, ask them for these.
+        Easiest: create a rep. account above — the coach then works with your sign-in. Or paste a coach link and password (the old way).
       </Body>
       <Field
         label="Coach link"

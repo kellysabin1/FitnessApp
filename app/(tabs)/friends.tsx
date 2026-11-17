@@ -33,7 +33,7 @@ export default function Friends() {
       <Screen>
         <Header />
         <Card tone="croc" style={{ marginTop: space(6), gap: space(3) }}>
-          <Eyebrow>Accountability, but cute</Eyebrow>
+          <Eyebrow>Built-in accountability</Eyebrow>
           <H2>Add friends, start a challenge, keep each other going.</H2>
           <Body muted>
             Share workouts and steps with your group, follow the same plan, climb the leaderboard and get a ping when your

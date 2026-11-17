@@ -68,7 +68,7 @@ export function buildCoachContext(): string {
   for (const wk of recent) {
     const exs = wk.exercises
       .map((ex) => {
-        const done = ex.sets.filter((x) => x.done);
+        const done = ex.sets.filter((x) => x.done && !x.warmup); // warm-ups left out
         if (!done.length) return null;
         const best = done
           .map((x) =>

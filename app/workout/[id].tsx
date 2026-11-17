@@ -94,6 +94,9 @@ export default function WorkoutScreen() {
           placeholderTextColor={colors.textFaint}
         />
 
+        {w.exercises.some((e) => e.category !== 'cardio') && !w.exercises.some((e) => e.sets.some((x) => x.warmup)) ? (
+          <Body muted style={{ fontSize: 12, marginTop: space(3) }}>Tip: tap a set number to mark it as a warm-up.</Body>
+        ) : null}
         <View style={{ gap: space(4), marginTop: space(4) }}>
           {w.exercises.map((ex) => (
             <ExerciseCard
@@ -150,7 +153,7 @@ export default function WorkoutScreen() {
                 </Pressable>
               ))}
             </Row>
-            <Body muted style={{ fontSize: 12, textAlign: 'center' }}>1 = rough · 5 = that girl</Body>
+            <Body muted style={{ fontSize: 12, textAlign: 'center' }}>1 = rough · 5 = unstoppable</Body>
             <Button
               title="Save workout"
               onPress={() => {
@@ -205,8 +208,17 @@ function ExerciseCard({
       </Row>
 
       {ex.sets.map((set, i) => (
-        <Row key={i} gap={2} style={[styles.setRow, set.done && { backgroundColor: 'rgba(95,99,64,0.28)' }]}>
-          <Text style={[styles.setNum, { width: 28 }]}>{i + 1}</Text>
+        <Row key={i} gap={2} style={[styles.setRow, set.done && { backgroundColor: set.warmup ? 'rgba(169,155,136,0.12)' : 'rgba(95,99,64,0.28)' }]}>
+          <Pressable
+            onPress={() => { tap(); setSet(i, { warmup: !set.warmup }); }}
+            hitSlop={6}
+            accessibilityLabel={set.warmup ? 'Warm-up set. Tap to make it a working set' : 'Working set. Tap to mark as warm-up'}
+            style={[styles.setNumWrap, set.warmup && styles.warmupBadge]}
+          >
+            <Text style={[styles.setNum, set.warmup && { color: colors.sand }]}>
+              {set.warmup ? 'W' : ex.sets.slice(0, i + 1).filter((x) => !x.warmup).length}
+            </Text>
+          </Pressable>
           {cols.map((c) => (
             <NumInput key={c.key} value={c.get(set)} onCommit={(v) => setSet(i, { ...c.set(v), ...(autoDone && v.trim() ? { done: true } : {}) })} placeholder="—" />
           ))}
@@ -221,7 +233,7 @@ function ExerciseCard({
 
       <Row style={{ justifyContent: 'space-between', marginTop: space(2) }}>
         <Pressable
-          onPress={() => onChange((e) => ({ ...e, sets: [...e.sets, { ...e.sets[e.sets.length - 1], done: false }] }))}
+          onPress={() => onChange((e) => ({ ...e, sets: [...e.sets, { ...e.sets[e.sets.length - 1], warmup: false, done: false }] }))}
           style={styles.smallBtn}
         >
           <Text style={styles.smallBtnText}>+ Add set</Text>
@@ -323,6 +335,8 @@ const styles = StyleSheet.create({
   meta: { fontFamily: fonts.body, fontSize: 12, color: colors.textFaint, marginTop: 2 },
   colHead: { fontFamily: fonts.bodyMedium, fontSize: 10, letterSpacing: 1.2, color: colors.textFaint, textAlign: 'center' },
   setRow: { paddingVertical: space(1.5), paddingHorizontal: space(1), borderRadius: radius.sm, marginTop: space(1) },
+  setNumWrap: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  warmupBadge: { borderWidth: 1, borderColor: 'rgba(169,155,136,0.5)' },
   setNum: { fontFamily: fonts.bodyBold, color: colors.textMuted, textAlign: 'center' },
   num: {
     flex: 1,

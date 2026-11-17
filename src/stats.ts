@@ -1,5 +1,8 @@
-import type { BodyEntry, Workout } from './store';
+import type { BodyEntry, SetEntry, Workout } from './store';
 import { todayKey } from './store';
+
+/** A set that counts: completed and not a warm-up. */
+export const counts = (s: SetEntry) => s.done && !s.warmup;
 
 export const epley1RM = (weightKg: number, reps: number) =>
   reps <= 1 ? weightKg : weightKg * (1 + reps / 30);
@@ -11,7 +14,7 @@ export function finished(workouts: Workout[]) {
 export function workoutVolumeKg(w: Workout) {
   let v = 0;
   for (const ex of w.exercises)
-    for (const s of ex.sets) if (s.done && s.reps && s.weightKg) v += s.reps * s.weightKg;
+    for (const s of ex.sets) if (counts(s) && s.reps && s.weightKg) v += s.reps * s.weightKg;
   return v;
 }
 
@@ -21,7 +24,7 @@ export function workoutDurationMin(w: Workout) {
 }
 
 export function setsDone(w: Workout) {
-  return w.exercises.reduce((n, ex) => n + ex.sets.filter((s) => s.done).length, 0);
+  return w.exercises.reduce((n, ex) => n + ex.sets.filter(counts).length, 0);
 }
 
 /** Best estimated 1RM per exercise, plus the set it came from. */
@@ -30,7 +33,7 @@ export function personalRecords(workouts: Workout[]) {
   for (const w of finished(workouts)) {
     for (const ex of w.exercises) {
       for (const s of ex.sets) {
-        if (!s.done || !s.weightKg || !s.reps) continue;
+        if (!counts(s) || !s.weightKg || !s.reps) continue;
         const e = epley1RM(s.weightKg, s.reps);
         const cur = prs.get(ex.name);
         if (!cur || e > cur.e1rm) prs.set(ex.name, { e1rm: e, weightKg: s.weightKg, reps: s.reps, date: w.startedAt });

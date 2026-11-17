@@ -57,11 +57,17 @@ Three runtime tiers, all managed SaaS, no servers we patch ourselves:
 | `GET /health` | none | Render health check |
 | `GET /push/public-key` | none | VAPID public key for subscriptions |
 | `POST /push/activity` | Supabase user JWT (verified via `auth.getUser` with service-role client) | Fan out Web Push for feed items |
-| `GET /auth-check` | `Authorization: Bearer <APP_TOKEN>` | Client "Save & test" |
-| `POST /coach/chat`, `POST /coach/plan` | APP_TOKEN | AI coach |
-| `POST /oura/token`, `POST /oura/refresh` | APP_TOKEN | OAuth code/refresh exchange |
+| `GET /coach/access` | Supabase user JWT | Whether this account has coach access + daily limits |
+| `POST /coach/chat`, `POST /coach/plan` | Supabase JWT **and** `profiles.coach_enabled` (legacy APP_TOKEN accepted until `ALLOW_APP_TOKEN=false`) | AI coach, with per-user daily quotas |
+| `GET /auth-check`, `POST /oura/token`, `POST /oura/refresh` | Any signed-in user or legacy APP_TOKEN | Connection check, OAuth code/refresh exchange |
 
-- APP_TOKEN compared with `crypto.timingSafeEqual`. CORS `*` (the bearer token is the control; no cookies).
+- **Per-user coach access (REP-1):** `profiles.coach_enabled` is protected with column-level privileges —
+  users can only write `id`, `username`, `display_name`, so only the owner (dashboard/SQL) can grant access.
+- **Rate limits (REP-2):** per-IP limit on all routes (`RATE_LIMIT_PER_MINUTE`, default 120, in memory);
+  per-user daily coach quotas (`COACH_DAILY_CHATS` 30, `COACH_DAILY_PLANS` 5) counted atomically in
+  Postgres (`bump_coach_usage`, server-only) so they survive restarts. Legacy APP_TOKEN callers get per-IP
+  daily quotas. Over-limit → `429` + `Retry-After`. `trust proxy` set for Render.
+- APP_TOKEN compared with `crypto.timingSafeEqual`. CORS `*` for now (REP-3 will restrict it).
 - **AI integration:** official `@anthropic-ai/sdk`. Stateless — the client builds a compact plain-text
   context snapshot (profile, goals, last 12 workouts, e1RMs, 7-day wearable data) and sends it per request.
   System persona is prompt-cached (`cache_control: ephemeral`). Chat uses `effort: low`; the weekly plan
@@ -101,7 +107,7 @@ Postgres Row-Level Security (RLS). The **service-role key** (bypasses RLS) exist
   `add_friend_to_challenge`) with `EXECUTE` revoked from `anon`/`public`.
 - **Leaderboard** is computed server-side in SQL (`challenge_leaderboard`, CTE pipeline) so scoring can't
   be manipulated by the client.
-- **Tests:** `supabase/rls_test.sql` — 24 assertions (cross-user write attempts, visibility, invite codes,
+- **Tests:** `supabase/rls_test.sql` — 31 assertions (cross-user write attempts, visibility, invite codes,
   scoring incl. plan-only mode and streaks, anon access). Run against local Postgres 16 with a mocked
   `auth.uid()`; also run as an upgrade test from the previous schema version.
 
@@ -133,9 +139,8 @@ Postgres Row-Level Security (RLS). The **service-role key** (bypasses RLS) exist
 ## 7. Known gaps & recommendations (prioritized)
 
 **Security / risk**
-1. **Coach auth is a shared bearer secret.** Anyone with APP_TOKEN can spend AI credit. Mitigated by the
-   Anthropic spend limit. → Move coach endpoints to Supabase JWT auth + per-user rate limits; retire APP_TOKEN.
-2. **No rate limiting** on the Express API. → Add per-IP/per-user limits (e.g. `express-rate-limit`).
+1. ~~Coach auth is a shared bearer secret~~ — done (REP-1); retire APP_TOKEN with `ALLOW_APP_TOKEN=false`.
+2. ~~No rate limiting~~ — done (REP-2).
 3. **Email confirmation off; no CAPTCHA** → unverified sign-ups. → Custom SMTP + confirmation, or Supabase CAPTCHA.
 4. **Health data.** Coach requests send health metrics to Anthropic; the app stores consumer health data.
    Likely not HIPAA-covered, but consumer-health privacy laws (e.g. Washington's My Health My Data Act)

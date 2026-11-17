@@ -9,13 +9,15 @@ Source: risks in [ARCHITECTURE.md §7](ARCHITECTURE.md#7-known-gaps--recommendat
 Sizes: **S** ≤ ½ day · **M** 1–2 days · **L** 3–5 days. Priority: **P0** before inviting anyone beyond
 close friends · **P1** before a public/beta launch · **P2** soon after.
 
+**Done:** REP-1, REP-2, REP-15, REP-19, REP-25. APP_TOKEN still accepted for one release (set `ALLOW_APP_TOKEN=false` on rep-coach to retire it).
+
 Suggested order: REP-1 → REP-2 → REP-3 → REP-6 → REP-4 → REP-5 → REP-7 → REP-8 → REP-9 → REP-10 → REP-11 → REP-12
 
 ---
 
 ## Epic A — Coach access & API protection
 
-### REP-1 · Authenticate AI coach requests per user (replace shared APP_TOKEN)
+### REP-1 · Authenticate AI coach requests per user (replace shared APP_TOKEN) — ✅ Done
 **Type:** Security · **Priority:** P0 · **Size:** M · **Depends on:** —
 
 **Why:** `/coach/*` is protected by one shared bearer secret. Anyone holding it can spend the Anthropic
@@ -34,7 +36,7 @@ budget, and access can't be revoked per person.
 - [ ] Coach tab shows "Coach not set up" / "Ask for coach access" states for signed-out or non-enabled users.
 - [ ] APP_TOKEN removed from Render and the codebase in the follow-up release; docs updated.
 
-### REP-2 · Rate-limit the API
+### REP-2 · Rate-limit the API — ✅ Done
 **Type:** Security · **Priority:** P0 · **Size:** S · **Depends on:** REP-1 (for per-user limits)
 
 **Scope**
@@ -239,7 +241,7 @@ visible to challenge-mates (today: no)?
 - [ ] No gendered copy remains in the app or coach system prompt (checklist reviewed with product owner).
 - [ ] Visual identity (colours, textures, fonts) unchanged.
 
-### REP-15 · Remove the "that girl" voice from copy
+### REP-15 · Remove the "that girl" voice from copy — ✅ Done
 **Type:** Content · **Priority:** TBD (quick win) · **Size:** S · **Depends on:** part of REP-14
 
 Current strings to rewrite (with location):
@@ -308,7 +310,7 @@ Current strings to rewrite (with location):
 - [ ] Tapping an exercise opens its history with at least e1RM and volume charts.
 - [ ] Finishing a workout shows a comparison summary and any PRs.
 
-### REP-19 · Warm-up vs working sets
+### REP-19 · Warm-up vs working sets — ✅ Done
 **Type:** Feature · **Priority:** TBD · **Size:** S · **Depends on:** —
 
 **Draft scope**
@@ -396,7 +398,7 @@ duration, effort, PRs, or Pilates/cardio specifically?
 **Open questions:** Which "times" matter — start/end times, workout windows (e.g. "before 9am counts double"),
 or deadlines per plan workout?
 
-### REP-25 · Creator can delete a challenge
+### REP-25 · Creator can delete a challenge — ✅ Done
 **Type:** Feature · **Priority:** TBD (quick win) · **Size:** S · **Depends on:** —
 
 **Today:** the database already allows the creator to delete a challenge (and members to leave); there's

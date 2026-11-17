@@ -79,7 +79,7 @@ export default function NewChallenge() {
 
   return (
     <Screen padTop={false} contentStyle={{ gap: space(6), paddingBottom: space(16) }}>
-      <Field label="Challenge name" value={name} onChangeText={setName} placeholder="e.g. Glute girls November" />
+      <Field label="Challenge name" value={name} onChangeText={setName} placeholder="e.g. November lift club" />
 
       <View style={{ gap: space(2) }}>
         <Text style={label}>What kind of challenge?</Text>

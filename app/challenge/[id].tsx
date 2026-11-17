@@ -10,6 +10,7 @@ import {
   leaderboard as loadBoard,
   type LeaderRow,
   leaveChallenge,
+  deleteChallenge,
   listFriendships,
   nudge,
   type Profile,
@@ -98,6 +99,17 @@ export default function ChallengeScreen() {
       // eslint-disable-next-line no-alert
       if (confirm(`Leave “${c.name}”?`)) go();
     } else Alert.alert('Leave challenge?', c.name, [{ text: 'Cancel', style: 'cancel' }, { text: 'Leave', style: 'destructive', onPress: go }]);
+  };
+
+  const isCreator = c.created_by === me;
+  const remove = () => {
+    const go = () => deleteChallenge(c.id).then(() => router.back()).catch((e) => setErr(e.message));
+    const others = Math.max(0, board.length - 1);
+    const msg = `This deletes “${c.name}” for everyone${others ? ` (${others} other member${others > 1 ? 's' : ''})` : ''}, including the leaderboard and feed. Everyone keeps their own workouts.`;
+    if (Platform.OS === 'web') {
+      // eslint-disable-next-line no-alert
+      if (confirm(`${msg}\n\nDelete challenge?`)) go();
+    } else Alert.alert('Delete challenge?', msg, [{ text: 'Cancel', style: 'cancel' }, { text: 'Delete', style: 'destructive', onPress: go }]);
   };
 
   return (
@@ -253,7 +265,11 @@ export default function ChallengeScreen() {
         )}
 
         <Divider />
-        <Button title="Leave challenge" variant="ghost" small onPress={leave} />
+        {isCreator ? (
+          <Button title="Delete challenge" icon="trash-outline" variant="danger" small onPress={remove} />
+        ) : (
+          <Button title="Leave challenge" variant="ghost" small onPress={leave} />
+        )}
       </Screen>
     </>
   );

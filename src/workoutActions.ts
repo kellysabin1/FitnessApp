@@ -8,7 +8,7 @@ export function makeExercise(name: string, excludeWorkoutId?: string): WorkoutEx
   const prev = lastPerformance(useStore.getState().workouts, def.name, excludeWorkoutId);
   const blank = (): SetEntry => ({ done: false });
   const sets: SetEntry[] = prev?.length
-    ? prev.map((p) => ({ reps: p.reps, weightKg: p.weightKg, seconds: p.seconds, distanceKm: p.distanceKm, done: false }))
+    ? prev.map((p) => ({ reps: p.reps, weightKg: p.weightKg, seconds: p.seconds, distanceKm: p.distanceKm, warmup: p.warmup, done: false }))
     : def.category === 'cardio'
       ? [blank()]
       : [blank(), blank(), blank()];

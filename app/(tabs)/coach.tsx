@@ -1,18 +1,18 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import type { ScrollViewInstance } from 'react-native';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Body, Button, Card, Display, Eyebrow, H2, Icon, Italic, Row, tap } from '@/src/components/ui';
 import { askCoach, generatePlan } from '@/src/coach';
 import { useStore } from '@/src/store';
-import { isCoachConfigured } from '@/src/api';
-import { router } from 'expo-router';
+import { checkCoachAccess, type CoachAccess, isCoachConfigured, usesAccountForCoach } from '@/src/api';
+import { router, useFocusEffect } from 'expo-router';
 import { colors, fonts, gradients, radius, space } from '@/src/theme';
 
 const PROMPTS = [
   'What should I train today based on my recovery?',
-  'Give me 3 new glute exercises to rotate in',
+  'Suggest 3 new exercises to rotate in',
   'Am I progressing on my lifts?',
   'Should I raise my step goal?',
   'Build me a 4-day split for my goals',
@@ -26,6 +26,19 @@ export default function Coach() {
   const [sending, setSending] = useState(false);
   const [planning, setPlanning] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [access, setAccess] = useState<CoachAccess | 'checking'>('checking');
+  const signedIn = usesAccountForCoach();
+
+  // Signed-in users: ask the server whether this account has coach access (re-checked each visit).
+  useFocusEffect(
+    useCallback(() => {
+      if (!usesAccountForCoach()) return;
+      checkCoachAccess().then((a) => {
+        setAccess(a);
+        if (a === 'enabled' && useStore.getState().coachStatus === 'no_access') useStore.getState().set({ coachStatus: undefined });
+      });
+    }, []),
+  );
 
   const send = async (msg: string) => {
     const m = msg.trim();
@@ -59,9 +72,15 @@ export default function Coach() {
   };
 
   const plan = s.plan;
-  const configured = isCoachConfigured(s.server);
-  if (!configured || s.coachStatus === 'unauthorized') {
-    return <CoachNotSetUp insetTop={insets.top} wrongPassword={configured} />;
+  if (signedIn) {
+    if (access === 'no_access' || s.coachStatus === 'no_access') {
+      return <CoachNotSetUp insetTop={insets.top} variant="no_access" username={s.account?.username} />;
+    }
+    if (access === 'signed_out') return <CoachNotSetUp insetTop={insets.top} variant="session_expired" />;
+  } else {
+    const configured = isCoachConfigured(s.server);
+    if (!configured) return <CoachNotSetUp insetTop={insets.top} variant="signed_out" />;
+    if (s.coachStatus === 'unauthorized') return <CoachNotSetUp insetTop={insets.top} variant="wrong_password" />;
   }
 
   return (
@@ -197,8 +216,42 @@ export default function Coach() {
   );
 }
 
-/** Shown until a coach link + password are saved (or when the password stops working). */
-function CoachNotSetUp({ insetTop, wrongPassword }: { insetTop: number; wrongPassword: boolean }) {
+type Locked = 'signed_out' | 'session_expired' | 'no_access' | 'wrong_password';
+
+const LOCKED: Record<Locked, { eyebrow: string; title: string; body: string; cta: string; to: '/account' | '/you' }> = {
+  signed_out: {
+    eyebrow: 'Coach not set up',
+    title: 'Sign in to use your coach',
+    body: 'The AI coach is invite-only and works through your rep. account. Sign in, then ask whoever shared rep. with you to switch on coach access.',
+    cta: 'Sign in or create an account',
+    to: '/account',
+  },
+  session_expired: {
+    eyebrow: 'Signed out',
+    title: 'Sign in again',
+    body: 'Your sign-in expired on this device. Sign in again to keep using the coach.',
+    cta: 'Sign in',
+    to: '/account',
+  },
+  no_access: {
+    eyebrow: 'Invite-only',
+    title: 'Ask for coach access',
+    body: 'Your account doesn’t have the AI coach switched on yet. To keep costs in check it’s invite-only — ask the person who shared rep. with you to turn it on.',
+    cta: 'View my account',
+    to: '/account',
+  },
+  wrong_password: {
+    eyebrow: 'Coach locked',
+    title: 'That coach password isn’t working',
+    body: 'The coach password saved on this phone was rejected — it may have been changed. Signing in with a rep. account is the easier way in.',
+    cta: 'Go to coach settings',
+    to: '/you',
+  },
+};
+
+/** Shown when the coach isn't available to this person yet. */
+function CoachNotSetUp({ insetTop, variant, username }: { insetTop: number; variant: Locked; username?: string }) {
+  const v = LOCKED[variant];
   return (
     <LinearGradient colors={gradients.screen} style={{ flex: 1 }}>
       <ScrollView contentContainerStyle={{ paddingTop: insetTop + space(4), paddingHorizontal: space(5), paddingBottom: space(28) }}>
@@ -209,18 +262,20 @@ function CoachNotSetUp({ insetTop, wrongPassword }: { insetTop: number; wrongPas
         <Card tone="satin" style={{ marginTop: space(6), gap: space(3) }}>
           <Row gap={2}>
             <Icon name="lock-closed-outline" size={15} color={colors.latte} />
-            <Eyebrow color={colors.latte}>{wrongPassword ? 'Coach locked' : 'Coach not set up'}</Eyebrow>
+            <Eyebrow color={colors.latte}>{v.eyebrow}</Eyebrow>
           </Row>
-          <H2>{wrongPassword ? 'That coach password isn’t working' : 'Your AI coach needs a password'}</H2>
-          <Body muted>
-            {wrongPassword
-              ? 'The coach password saved on this phone was rejected. It may have been changed — ask for the new one, then update it in You → Coach.'
-              : 'The coach is invite-only. If someone shared rep. with you, ask them for the coach link and coach password. Then add them in You → Coach.'}
-          </Body>
-          <Body muted style={{ fontSize: 13 }}>
-            Everything else — workouts, PRs, weigh-ins and goals — works without it.
-          </Body>
-          <Button title="Go to coach settings" icon="arrow-forward" style={{ marginTop: space(2) }} onPress={() => router.push('/you')} />
+          <H2>{v.title}</H2>
+          <Body muted>{v.body}</Body>
+          {variant === 'no_access' && username ? (
+            <Body style={{ fontSize: 14 }}>
+              Tell them your username: <Text style={{ fontFamily: fonts.bodyBold, color: colors.cream }}>@{username}</Text>
+            </Body>
+          ) : null}
+          <Body muted style={{ fontSize: 13 }}>Everything else — workouts, PRs, weigh-ins, goals and challenges — works without it.</Body>
+          <Button title={v.cta} icon="arrow-forward" style={{ marginTop: space(2) }} onPress={() => router.push(v.to)} />
+          {variant === 'signed_out' ? (
+            <Button title="I have a coach password instead" variant="ghost" small onPress={() => router.push('/you')} />
+          ) : null}
         </Card>
       </ScrollView>
     </LinearGradient>

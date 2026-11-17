@@ -87,3 +87,28 @@ select points from challenge_leaderboard(:'ch') where username = 'kelly';
 
 \echo '--- T24 Kelly still sees all 3 of her own workouts:'
 select pg_temp.as_user(:'A'); select count(*) from workouts where user_id = :'A';
+
+-- ───── v3: coach access, usage limits, deleting challenges ─────
+reset role; set role authenticated;
+\echo '--- T25 user cannot switch on their own coach access (expect permission ERROR):'
+select pg_temp.as_user(:'A'); update profiles set coach_enabled = true where id = :'A';
+\echo '--- T26 user can still edit their display name (expect Kelly R):'
+update profiles set display_name = 'Kelly R' where id = :'A'; select display_name from profiles where id = :'A';
+\echo '--- T27 users cannot call the usage counter or read usage (expect ERROR, then 0):'
+select bump_coach_usage(:'A', 'chat', 30);
+select count(*) from coach_usage;
+\echo '--- T28 server counts uses up to the limit (expect 1, 2, then empty = limit reached; plans separate = 1):'
+reset role; set role service_role;
+select bump_coach_usage(:'A', 'chat', 2); select bump_coach_usage(:'A', 'chat', 2); select bump_coach_usage(:'A', 'chat', 2) is null as limited;
+select bump_coach_usage(:'A', 'plan', 5);
+\echo '--- T29 non-creator delete removes nothing (expect 0), challenge still there (expect 1):'
+reset role; set role authenticated; select pg_temp.as_user(:'B');
+with d as (delete from challenges where id = :'ch' returning 1) select count(*) from d;
+select count(*) from challenges where id = :'ch';
+\echo '--- T30 creator delete removes challenge, members and feed (expect 1, then 0 0 0):'
+select pg_temp.as_user(:'A');
+with d as (delete from challenges where id = :'ch' returning 1) select count(*) from d;
+reset role;
+select (select count(*) from challenges where id = :'ch'), (select count(*) from challenge_members where challenge_id = :'ch'), (select count(*) from activity where challenge_id = :'ch');
+\echo '--- T31 Kellys workouts survive the challenge deletion (expect 3):'
+select count(*) from workouts where user_id = :'A';

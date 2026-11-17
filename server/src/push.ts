@@ -1,23 +1,16 @@
 // Friend notifications (Web Push). Signed-in rep. users call these with their Supabase login,
 // not the coach password, so friends get notifications without needing coach access.
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import type { Express, Request, Response } from 'express';
 import * as webpush from 'web-push';
 import { z } from 'zod';
 
-const SUPABASE_URL = process.env.SUPABASE_URL ?? '';
-const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
+import { db, supabaseConfigured, userFromRequest } from './supabase.js';
+
 const APP_URL = (process.env.APP_URL ?? '').replace(/\/$/, '');
 
-let admin: SupabaseClient | null = null;
 let vapidPublic: string | null = null;
 
-export const pushConfigured = () => !!SUPABASE_URL && !!SERVICE_KEY;
-
-function db() {
-  if (!admin) admin = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false, autoRefreshToken: false } });
-  return admin;
-}
+export const pushConfigured = supabaseConfigured;
 
 /**
  * Notification keys: from env if set, otherwise generated once and kept in the
@@ -50,13 +43,6 @@ async function ensureVapid(): Promise<string> {
   webpush.setVapidDetails(APP_URL.startsWith('https://') ? APP_URL : 'mailto:notifications@rep.invalid', pub, priv);
   vapidPublic = pub;
   return pub;
-}
-
-async function userFromRequest(req: Request) {
-  const token = (req.headers.authorization ?? '').replace(/^Bearer\s+/i, '');
-  if (!token) return null;
-  const { data, error } = await db().auth.getUser(token);
-  return error ? null : data.user;
 }
 
 const ActivityBody = z.object({ ids: z.array(z.number().int().positive()).min(1).max(10) });

@@ -23,6 +23,14 @@ drop policy if exists "update own profile" on public.profiles;
 create policy "update own profile" on public.profiles
   for update to authenticated using (id = auth.uid()) with check (id = auth.uid());
 
+-- v3: per-person AI coach access. Only the owner can switch it on (Supabase dashboard → Table editor →
+-- profiles → coach_enabled, or the SQL at the bottom of this file). Users can't change it themselves:
+-- they may only write their id, username and display name (column-level privileges below).
+alter table public.profiles add column if not exists coach_enabled boolean not null default false;
+revoke insert, update on public.profiles from anon, authenticated;
+grant insert (id, username, display_name) on public.profiles to authenticated;
+grant update (id, username, display_name) on public.profiles to authenticated;
+
 -- ───────────────────────── Friends ─────────────────────────
 create table if not exists public.friendships (
   requester uuid not null references public.profiles (id) on delete cascade,
@@ -407,3 +415,43 @@ grant execute on function public.create_challenge(text, date, date, boolean, boo
 grant execute on function public.join_challenge(text) to authenticated;
 grant execute on function public.add_friend_to_challenge(uuid, uuid) to authenticated;
 grant execute on function public.challenge_leaderboard(uuid) to authenticated;
+
+-- ───────────────────────── AI coach usage limits (v3) ─────────────────────────
+-- Daily per-person counters. Server-only: RLS on with no policies, functions callable only by the server.
+create table if not exists public.coach_usage (
+  user_id uuid not null references public.profiles (id) on delete cascade,
+  day date not null,
+  chats integer not null default 0,
+  plans integer not null default 0,
+  primary key (user_id, day)
+);
+alter table public.coach_usage enable row level security;
+
+-- Atomically counts one use if under the limit. Returns the new count, or null when the limit is reached.
+create or replace function public.bump_coach_usage(p_user uuid, p_kind text, p_limit integer) returns integer
+language plpgsql security definer set search_path = public as $$
+declare n integer;
+begin
+  if p_kind not in ('chat', 'plan') then raise exception 'bad kind'; end if;
+  insert into coach_usage (user_id, day, chats, plans)
+  values (p_user, (now() at time zone 'utc')::date,
+          case when p_kind = 'chat' then 1 else 0 end,
+          case when p_kind = 'plan' then 1 else 0 end)
+  on conflict (user_id, day) do update
+    set chats = coach_usage.chats + case when p_kind = 'chat' then 1 else 0 end,
+        plans = coach_usage.plans + case when p_kind = 'plan' then 1 else 0 end
+    where (p_kind = 'chat' and coach_usage.chats < p_limit)
+       or (p_kind = 'plan' and coach_usage.plans < p_limit)
+  returning case when p_kind = 'chat' then chats else plans end into n;
+  if n is not null and n > p_limit then return null; end if;  -- first use of the day with limit 0
+  return n;
+end $$;
+revoke execute on function public.bump_coach_usage(uuid, text, integer) from public, anon, authenticated;
+do $$ begin
+  if exists (select 1 from pg_roles where rolname = 'service_role') then
+    grant execute on function public.bump_coach_usage(uuid, text, integer) to service_role;
+  end if;
+end $$;
+
+-- Give someone coach access (run in SQL editor, replace the username):
+--   update public.profiles set coach_enabled = true where username = 'your_username';

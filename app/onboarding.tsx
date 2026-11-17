@@ -76,7 +76,7 @@ export default function Onboarding() {
             </Row>
             <Eyebrow>Welcome</Eyebrow>
             <Display>
-              Your strongest era <Italic>starts here.</Italic>
+              Train smarter. <Italic>Get stronger.</Italic>
             </Display>
             <Body muted>Log every lift, flow and walk. Your coach learns your goals, your data and your recovery.</Body>
             <Field label="What should we call you?" value={name} onChangeText={setName} placeholder="Your name" autoFocus />

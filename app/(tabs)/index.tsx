@@ -57,8 +57,16 @@ export default function Today() {
           <Eyebrow>{new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}</Eyebrow>
         </Row>
         <Display style={{ marginTop: space(2) }}>
-          {greeting},{'\n'}
-          <Italic>{s.profile.name || 'gorgeous'}.</Italic>
+          {s.profile.name ? (
+            <>
+              {greeting},{'\n'}
+              <Italic>{s.profile.name}.</Italic>
+            </>
+          ) : (
+            <>
+              {greeting.split(' ')[0]} <Italic>{greeting.split(' ')[1]}.</Italic>
+            </>
+          )}
         </Display>
 
         {/* Hero: steps ring + readiness */}
