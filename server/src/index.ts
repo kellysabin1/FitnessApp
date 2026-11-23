@@ -9,6 +9,7 @@ import express, { type NextFunction, type Request, type Response } from 'express
 import { timingSafeEqual } from 'node:crypto';
 import { z } from 'zod';
 import { mountPushRoutes } from './push.js';
+import { mountReminderRoutes } from './reminders.js';
 import { ipRateLimit, LIMITS, sendDailyLimit, takeLegacyQuota, takeUserQuota, type CoachKind } from './limits.js';
 import { db, supabaseConfigured, userFromRequest } from './supabase.js';
 
@@ -46,6 +47,7 @@ app.get('/health', (_req, res) => {
 
 // Friend notifications use the person's rep. login instead of the coach password.
 mountPushRoutes(app);
+mountReminderRoutes(app);
 
 // ---------------- Who is calling? ----------------
 

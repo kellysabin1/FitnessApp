@@ -71,6 +71,17 @@ export default function You() {
         </Card>
       ) : null}
 
+      <SectionHeader title="Reminders" />
+      <Card onPress={() => router.push('/reminders')}>
+        <Connection
+          icon="notifications-outline"
+          tint={colors.latte}
+          title="Workout reminders"
+          sub="A nudge at your chosen time if you haven’t logged a workout yet. Rest days skip it."
+          action={<Icon name="chevron-forward" size={18} color={colors.textMuted} />}
+        />
+      </Card>
+
       {/* Coach first — it's the one thing that needs setting up */}
       <SectionHeader title="Coach" />
       <CoachSettings />

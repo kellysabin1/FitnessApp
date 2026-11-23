@@ -172,3 +172,39 @@ with u as (update user_data set targets = '[]' where user_id = :'A' returning 1)
 \echo '--- T44 oversized splits rejected (expect check constraint ERROR):'
 select pg_temp.as_user(:'A');
 update user_data set splits = jsonb_build_array(repeat('x', 300001)) where user_id = :'A';
+
+-- ───── v7: split tags on workouts, daily reminders ─────
+reset role; set role authenticated;
+\echo '--- T45 workouts keep their split tags (expect s1 | w2):'
+select pg_temp.as_user(:'C');
+insert into workouts(user_id, id, title, started_at, finished_at, local_day, split_id, split_workout_id)
+  values (:'C', 'sw1', 'Lower A', now() - interval '3 days', now() - interval '3 days', current_date - 3, 's1', 'w2');
+select split_id, split_workout_id from workouts where id = 'sw1';
+\echo '--- T46 owner saves reminder settings; others cannot see them (expect 1, then 0):'
+insert into reminder_settings(user_id, tz, remind_at) values (:'C', 'UTC',
+  case when (now() at time zone 'UTC')::time >= '00:10' then ((now() at time zone 'UTC')::time - interval '10 minutes')::time else '00:00' end);
+select count(*) from reminder_settings;
+select pg_temp.as_user(:'B'); select count(*) from reminder_settings where user_id = :'C';
+\echo '--- T47 users cannot run the reminder functions (expect 2 permission ERRORs):'
+select * from due_reminders();
+select mark_reminded(:'C', current_date);
+\echo '--- T48 due: past reminder time, nothing logged today (expect C listed, count 1):'
+reset role; set role service_role;
+select count(*) from due_reminders() where user_id = :'C';
+\echo '--- T49 only once a day: after mark_reminded (expect 0):'
+select mark_reminded(:'C', (now() at time zone 'UTC')::date);
+select count(*) from due_reminders() where user_id = :'C';
+\echo '--- T50 rest day skips it (expect 0):'
+update reminder_settings set last_sent_day = null, rest_day = (now() at time zone 'UTC')::date where user_id = :'C';
+select count(*) from due_reminders() where user_id = :'C';
+\echo '--- T51 a workout logged today skips it (expect 1 before, 0 after):'
+update reminder_settings set rest_day = null where user_id = :'C';
+select count(*) from due_reminders() where user_id = :'C';
+insert into workouts(user_id, id, title, started_at, finished_at, local_day) values (:'C', 'today1', 'Walk', now(), now(), (now() at time zone 'UTC')::date);
+select count(*) from due_reminders() where user_id = :'C';
+\echo '--- T52 a bad time zone or a time not reached yet never breaks or fires (expect 0, 0):'
+delete from workouts where id = 'today1';
+insert into reminder_settings(user_id, tz) values (:'B', 'Mars/Olympus') on conflict (user_id) do update set tz = 'Mars/Olympus';
+select count(*) from due_reminders() where user_id = :'B';
+update reminder_settings set remind_at = ((now() at time zone 'UTC')::time + interval '1 hour')::time where user_id = :'C';
+select count(*) from due_reminders() where user_id = :'C' and (now() at time zone 'UTC')::time < '23:00';

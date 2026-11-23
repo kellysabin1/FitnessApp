@@ -45,6 +45,35 @@ async function ensureVapid(): Promise<string> {
   return pub;
 }
 
+export interface PushMessage {
+  title: string;
+  body: string;
+  url: string;
+  tag: string;
+}
+
+/** Send one notification to every device these people have turned notifications on for. Returns how many went out. */
+export async function pushToUsers(userIds: string[], message: PushMessage, ttlSeconds = 60 * 60 * 12): Promise<number> {
+  if (!userIds.length) return 0;
+  await ensureVapid();
+  const { data: subs } = await db().from('push_subscriptions').select('endpoint, p256dh, auth').in('user_id', userIds);
+  let sent = 0;
+  for (const s of subs ?? []) {
+    try {
+      await webpush.sendNotification({ endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } }, JSON.stringify(message), { TTL: ttlSeconds });
+      sent++;
+    } catch (err: any) {
+      // 404/410 = that phone unsubscribed or reinstalled; tidy it up
+      if (err?.statusCode === 404 || err?.statusCode === 410) {
+        await db().from('push_subscriptions').delete().eq('endpoint', s.endpoint);
+      } else {
+        console.error('push failed', err?.statusCode, err?.body);
+      }
+    }
+  }
+  return sent;
+}
+
 const ActivityBody = z.object({ ids: z.array(z.number().int().positive()).min(1).max(10) });
 
 export function mountPushRoutes(app: Express) {
@@ -101,24 +130,7 @@ export function mountPushRoutes(app: Express) {
               : null;
         if (!message) continue;
 
-        const { data: subs } = await db().from('push_subscriptions').select('endpoint, p256dh, auth').in('user_id', recipients);
-        for (const s of subs ?? []) {
-          try {
-            await webpush.sendNotification(
-              { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } },
-              JSON.stringify({ ...message, url: `/challenge/${it.challenge_id}`, tag: `act-${it.id}` }),
-              { TTL: 60 * 60 * 12 },
-            );
-            sent++;
-          } catch (err: any) {
-            // 404/410 = that phone unsubscribed or reinstalled; tidy it up
-            if (err?.statusCode === 404 || err?.statusCode === 410) {
-              await db().from('push_subscriptions').delete().eq('endpoint', s.endpoint);
-            } else {
-              console.error('push failed', err?.statusCode, err?.body);
-            }
-          }
-        }
+        sent += await pushToUsers(recipients, { ...message, url: `/challenge/${it.challenge_id}`, tag: `act-${it.id}` });
       }
       res.json({ sent });
     } catch (e) {

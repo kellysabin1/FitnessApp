@@ -343,7 +343,7 @@ shareable inside challenge plans? (Plans already accept free-text names.)
 
 ## Epic I — Reminders & notifications
 
-### REP-21 · Reminders to log workouts
+### REP-21 · Reminders to log workouts — ✅ Push done (default 8 pm, your own time in 30-min steps, only if nothing logged that day, "Rest day today" skips it; You → Reminders). Email built but switched off until an email provider key is added (with REP-4).
 **Type:** Feature · **Priority:** TBD · **Size:** M · **Depends on:** REP-13 (needs account email), REP-4 (email sending)
 
 **Draft scope**
@@ -494,14 +494,14 @@ Privacy: eating data is sensitive — needs explicit coverage in REP-6.
 | **M** | REP-5 Delete account + export data | Pairs with REP-13 |
 | **M** | REP-8 CI + branch protection | After REP-9/10 |
 | **M–L** | REP-13 Accounts required + full sync | Sign-up in onboarding; sync profile, settings, custom exercises, splits, goals; body stats stay private (owner-only). **Unblocks** reminders, splits sync, goals. |
-| **M–L** | REP-4 + REP-21 Email (verification) + daily reminders | Shared email provider (e.g. Resend) + a daily scheduler; per-user time zone; notification settings page. After REP-13. |
+| **M–L** | REP-4 + REP-21 Email (verification) + daily reminders — *push reminders ✅; email waits on a Resend account* | Shared email provider (e.g. Resend) + a daily scheduler; per-user time zone; notification settings page. After REP-13. |
 | ~~L~~ ✅ | REP-27 Splits/folders + AI-generated splits + "add coach plan as workouts" | Shipped. |
 | ~~L–XL~~ ✅ | REP-16/17 Goals, targets & tracker page | Shipped. |
 | **L** | REP-12 Staging + automated migrations | |
 | **XL / blocked** | REP-26 Health imports | Apple Health (also carries RingConn, Oura, Garmin, Strava, Whoop data), Google Health Connect for Android. Needs the native app → Apple Developer Program. |
 | **XL / later** | REP-28 Meals & macros | Needs design: AI photo logging, barcode scan, food database search — no manual macro entry. |
 
-**Recommended next build order:** ~~REP-13~~ ✅ → ~~REP-27~~ ✅ → ~~REP-16/17~~ ✅ → **REP-21 (reminders) + REP-4** next. Small items (REP-9/10/7/11) can be slotted in between.
+**Recommended next build order:** ~~REP-13~~ ✅ → ~~REP-27~~ ✅ → ~~REP-16/17~~ ✅ → ~~REP-21 push~~ ✅ → **REP-4 + email reminders** (needs a Resend account). Small items (REP-9/10/7/11) can be slotted in between.
 
 ### Open questions for the next round
 - **Challenge "tasks" (REP-24b):** what's a task? e.g. a daily checklist item ("drink 3L water", "stretch 10 min") that members tick off and earn points for? Or weekly targets ("4 workouts this week")?

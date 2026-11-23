@@ -12,6 +12,7 @@ import { useEffect, useState } from 'react';
 import { useStore } from '@/src/store';
 import { restoreSession } from '@/src/social/api';
 import { registerServiceWorker } from '@/src/social/push';
+import { ensureReminders } from '@/src/social/reminders';
 import { startAutoSync } from '@/src/social/autosync';
 import { colors, fonts } from '@/src/theme';
 
@@ -44,7 +45,9 @@ export default function RootLayout() {
   }, [loaded, hydrated]);
   useEffect(() => {
     if (!hydrated) return;
-    restoreSession().catch(() => {});
+    restoreSession()
+      .then(() => ensureReminders())
+      .catch(() => {});
     registerServiceWorker();
     startAutoSync();
   }, [hydrated]);
@@ -80,6 +83,7 @@ export default function RootLayout() {
         <Stack.Screen name="split-new" options={{ presentation: 'modal', title: 'New split' }} />
         <Stack.Screen name="target/[id]" options={{ title: '' }} />
         <Stack.Screen name="target-new" options={{ presentation: 'modal', title: 'New target' }} />
+        <Stack.Screen name="reminders" options={{ presentation: "modal", title: "Reminders" }} />
         <Stack.Screen name="join/[code]" options={{ headerShown: false }} />
       </Stack>
     </ThemeProvider>

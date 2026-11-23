@@ -1,12 +1,13 @@
 import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { RefreshControl, ScrollView, Text, useWindowDimensions, View } from 'react-native';
+import { Pressable, RefreshControl, ScrollView, Text, useWindowDimensions, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Bars, Ring } from '@/src/components/charts';
 import { Body, Button, Card, Display, Eyebrow, H2, Heart, Icon, Italic, Row, SectionHeader, Stat } from '@/src/components/ui';
 import { syncHealth } from '@/src/health/sync';
 import { TodayTasks } from '@/src/social/TodayTasks';
+import { setRestDay } from '@/src/social/reminders';
 import { UpNextCard } from '@/src/components/UpNext';
 import { lastNDates, relativeDay, setsDone, weekStreak, workoutDurationMin, workoutsThisWeek, latestBody } from '@/src/stats';
 import { healthForDate, todayKey, useStore } from '@/src/store';
@@ -25,6 +26,8 @@ export default function Today() {
   const streak = weekStreak(s.workouts);
   const weight = latestBody(s.body, 'weightKg');
   const connected = s.appleHealthEnabled || !!s.oura;
+  const loggedToday = s.workouts.some((w) => w.finishedAt && todayKey(new Date(w.startedAt)) === todayKey());
+  const restToday = s.restDay === todayKey();
 
   const refresh = useCallback(async () => {
     setRefreshing(true);
@@ -130,6 +133,19 @@ export default function Today() {
               onPress={() => router.push(`/workout/${s.startWorkout()}`)}
             />
             <Button title="Log one I already did" variant="ghost" small style={{ marginTop: space(2) }} onPress={() => router.push('/log-past')} />
+            {!loggedToday && s.account ? (
+              restToday ? (
+                <Row style={{ justifyContent: 'center', marginTop: space(2) }} gap={2}>
+                  <Icon name="moon-outline" size={14} color={colors.olive} />
+                  <Body muted style={{ fontSize: 13 }}>Rest day — no reminder tonight.</Body>
+                  <Pressable onPress={() => setRestDay(false).catch(() => {})} hitSlop={8}>
+                    <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 13, color: colors.latte }}>Undo</Text>
+                  </Pressable>
+                </Row>
+              ) : (
+                <Button title="Rest day today" icon="moon-outline" variant="ghost" small onPress={() => setRestDay(true).catch(() => {})} />
+              )
+            ) : null}
           </Card>
         )}
 

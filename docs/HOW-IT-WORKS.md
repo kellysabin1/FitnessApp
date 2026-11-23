@@ -90,7 +90,7 @@ public/       website extras (home-screen icon, notification helper)
 
 **Working now:** workout logging (live and after the fact), body & goals tracking, splits with a rolling
 "Up next" (your own, ready-made, or built by the coach), targets with deadlines, pace tracking and a coach plan
-on the Progress tab, AI coach, accounts,
+on the Progress tab, daily workout reminders (push) with rest days, AI coach, accounts,
 friends, challenges (any-workout or group-plan), leaderboards, feed, reactions, nudges, notifications.
 
 **Needs the $99 Apple Developer account:** the real iPhone app, which unlocks **Apple Health,

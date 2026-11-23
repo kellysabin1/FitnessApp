@@ -22,6 +22,11 @@ services:
         sync: false # secret — paste from Supabase, never share
       - key: APP_URL
         sync: false # your rep-app address, e.g. https://rep-app-xxxx.onrender.com
+      # Optional: email reminders (resend.com). Leave unset and only push reminders are sent.
+      - key: RESEND_API_KEY
+        sync: false # secret — paste from Resend, never share
+      - key: REMINDER_FROM
+        sync: false # e.g. rep. <reminders@yourdomain.com>
 
   # The rep. web app — open on your iPhone in Safari, then Share → Add to Home Screen.
   - type: web

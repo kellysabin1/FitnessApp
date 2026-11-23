@@ -3,6 +3,7 @@ import type { Session } from '@supabase/supabase-js';
 import { setsDone, workoutDurationMin, workoutVolumeKg } from '../stats';
 import { healthForDate, todayKey, useStore, type Workout } from '../store';
 import { friendly, requireSb, sb } from './supabase';
+import { ensureReminders } from './reminders';
 
 export interface Profile {
   id: string;
@@ -64,6 +65,7 @@ async function onSignedIn(session: Session) {
     useStore.setState({ account: { userId, email: session.user.email ?? '', username: p.username, displayName: p.display_name } });
   }
   await syncUp().catch(() => {});
+  if (p) void ensureReminders();
 }
 
 /** Bring this phone up to date with the account (new phone, reinstall, or edits on another device). */
@@ -121,6 +123,7 @@ export async function saveProfile(username: string, displayName: string) {
   useStore.setState({ account: { ...acct, username: u, displayName: displayName.trim() } });
   // Account setup finished: back up everything already on this phone right away.
   await syncUp().catch(() => {});
+  void ensureReminders();
 }
 
 // ─────────────── Sync (also your cloud backup) ───────────────
@@ -137,6 +140,8 @@ function toRow(userId: string, w: Workout) {
     sets_done: setsDone(w),
     volume_kg: Math.round(workoutVolumeKg(w)),
     plan_item: w.planItem ?? null,
+    split_id: w.splitId ?? null,
+    split_workout_id: w.splitWorkoutId ?? null,
     exercises: w.exercises,
     updated_at: w.updatedAt ?? w.finishedAt!,
   };
@@ -282,7 +287,7 @@ export async function pullWorkouts() {
   if (!acct) return;
   const { data, error } = await c
     .from('workouts')
-    .select('id, title, started_at, finished_at, exercises, plan_item, updated_at')
+    .select('id, title, started_at, finished_at, exercises, plan_item, split_id, split_workout_id, updated_at')
     .eq('user_id', acct.userId)
     .order('started_at', { ascending: false })
     .limit(1000);
@@ -299,6 +304,8 @@ export async function pullWorkouts() {
       finishedAt: r.finished_at,
       exercises: r.exercises ?? [],
       planItem: r.plan_item ?? undefined,
+      splitId: r.split_id ?? mine?.splitId,
+      splitWorkoutId: r.split_workout_id ?? mine?.splitWorkoutId,
       updatedAt: r.updated_at,
     });
   }

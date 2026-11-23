@@ -171,6 +171,8 @@ interface State {
   pendingBodyDeletes: string[];
   /** Invite code opened before the person had an account — joined right after setup. */
   pendingInvite?: string;
+  /** a day you marked as a rest day (no reminder that day) */
+  restDay?: string;
   /** Account id this device's data belongs to (so a different person signing in starts clean). */
   dataOwner?: string;
   /** Last local change to profile, units or custom exercises (ISO) — used to sync. */

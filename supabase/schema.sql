@@ -577,3 +577,62 @@ exception when duplicate_object then null; end $$;
 do $$ begin
   alter table public.user_data add constraint user_data_targets_size check (octet_length(targets::text) <= 300000);
 exception when duplicate_object then null; end $$;
+
+-- v7: remember which split workout a logged workout came from (so "Up next" survives a reinstall)
+alter table public.workouts add column if not exists split_id text check (char_length(split_id) <= 64);
+alter table public.workouts add column if not exists split_workout_id text check (char_length(split_workout_id) <= 64);
+
+-- v7: daily workout reminders. Owner-only settings; the server (service role) decides who is due.
+create table if not exists public.reminder_settings (
+  user_id uuid primary key references public.profiles (id) on delete cascade,
+  push boolean not null default true,
+  email boolean not null default false,
+  remind_at time not null default '20:00',
+  tz text not null default 'America/New_York' check (char_length(tz) <= 64),
+  rest_day date,                 -- "Rest day today": no reminder on this day
+  last_sent_day date,            -- the local day we last reminded them (one reminder a day, max)
+  updated_at timestamptz not null default now()
+);
+alter table public.reminder_settings enable row level security;
+drop policy if exists "owner only" on public.reminder_settings;
+create policy "owner only" on public.reminder_settings
+  for all to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
+
+-- Who should get a reminder right now: past their time (within a 3-hour window, so a late run
+-- never pings at 2am), not reminded yet today, not a rest day, and no workout logged today.
+-- Unknown time zones are skipped (local_now returns null) instead of breaking the whole run.
+-- Local time in a person's time zone; null (instead of an error) for a time zone Postgres doesn't know.
+create or replace function public.local_now(p_tz text)
+returns timestamp language plpgsql stable set search_path = pg_catalog as $$
+begin
+  return now() at time zone p_tz;
+exception when others then
+  return null;
+end $$;
+
+create or replace function public.due_reminders()
+returns table (user_id uuid, push boolean, email boolean, local_day date)
+language sql stable security definer set search_path = public, pg_catalog as $$
+  with r as (
+    select s.*, public.local_now(s.tz) as lt
+    from reminder_settings s
+    where s.push or s.email
+  )
+  select r.user_id, r.push, r.email, r.lt::date
+  from r
+  where r.lt is not null
+    and r.lt::time >= r.remind_at
+    and r.lt::time - r.remind_at < interval '3 hours'
+    and r.last_sent_day is distinct from r.lt::date
+    and r.rest_day is distinct from r.lt::date
+    and not exists (select 1 from workouts w where w.user_id = r.user_id and w.local_day = r.lt::date)
+$$;
+revoke all on function public.due_reminders() from public, anon, authenticated;
+grant execute on function public.due_reminders() to service_role;
+
+create or replace function public.mark_reminded(p_user uuid, p_day date)
+returns void language sql security definer set search_path = public, pg_catalog as $$
+  update reminder_settings set last_sent_day = p_day where user_id = p_user;
+$$;
+revoke all on function public.mark_reminded(uuid, date) from public, anon, authenticated;
+grant execute on function public.mark_reminded(uuid, date) to service_role;

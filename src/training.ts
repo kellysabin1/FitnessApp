@@ -37,9 +37,26 @@ export interface Split {
  */
 export function upNext(split: Split, workouts: Workout[]): { workout: SplitWorkout; index: number; lastDone?: string } | undefined {
   if (!split.workouts.length) return undefined;
-  const last = workouts.find((w) => w.finishedAt && w.splitId === split.id && w.splitWorkoutId);
+  // Most recent finished workout from this split. Workouts saved before split tags synced to the
+  // cloud come back untagged after a reinstall, so fall back to matching the workout's title.
+  const byTitle = new Map(split.workouts.map((sw) => [sw.title.trim().toLowerCase(), sw.id]));
+  let lastId: string | undefined;
+  let last: Workout | undefined;
+  for (const w of workouts) {
+    if (!w.finishedAt) continue;
+    const id =
+      w.splitId === split.id && w.splitWorkoutId
+        ? w.splitWorkoutId
+        : !w.splitId && w.startedAt >= split.createdAt
+          ? byTitle.get(w.title.trim().toLowerCase())
+          : undefined;
+    if (id && (!last || w.startedAt > last.startedAt)) {
+      last = w;
+      lastId = id;
+    }
+  }
   if (!last) return { workout: split.workouts[0], index: 0 };
-  const i = split.workouts.findIndex((sw) => sw.id === last.splitWorkoutId);
+  const i = split.workouts.findIndex((sw) => sw.id === lastId);
   const next = i < 0 ? 0 : (i + 1) % split.workouts.length;
   return { workout: split.workouts[next], index: next, lastDone: last.startedAt };
 }
