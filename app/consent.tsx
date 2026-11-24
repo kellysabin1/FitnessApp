@@ -37,7 +37,8 @@ export default function Consent() {
         </Checkbox>
         <Checkbox checked={health} onChange={setHealth} label="I consent to rep. storing my health and fitness data">
           I consent to rep. storing my health and fitness data (workouts, body measurements, steps, and wearable data if I connect it) to
-          run the app for me. It’s never sold.
+          run the app for me, as described in the{' '}
+          <TextLink title="Consumer Health Data Privacy Policy" onPress={() => router.push('/health-privacy')} />. It’s never sold.
         </Checkbox>
       </View>
       <Button

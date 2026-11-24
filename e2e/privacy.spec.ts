@@ -115,3 +115,19 @@ test('invite links show what is shared and wait for a tap before joining', async
   expect(st.joined).toEqual(['ABC123']);
   expect(st.consents.some((c: any) => c.kind === 'challenge_sharing' && c.context === 'join:ABC123')).toBe(true);
 });
+
+test('the health data policy is linked from the start screen and readable signed out', async ({ page }) => {
+  await page.goto('/welcome');
+  await page.getByText('Consumer Health Data Privacy Policy', { exact: true }).first().click();
+  await expect(page.getByText('Health data we collect')).toBeVisible();
+  await expect(page.getByText('Who we share it with')).toBeVisible();
+  await expect(page.getByText(/We answer within 45 days/).first()).toBeVisible();
+});
+
+test('a reset link that is expired or broken explains what to do and clears the address bar', async ({ page }) => {
+  await page.goto('/reset-password#error=access_denied&error_code=otp_expired');
+  await expect(page.getByText(/This reset link has expired/)).toBeVisible();
+  expect(page.url()).not.toContain('error=');
+  await page.goto('/reset-password');
+  await expect(page.getByText(/This reset link has expired/)).toBeVisible();
+});

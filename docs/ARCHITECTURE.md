@@ -189,7 +189,7 @@ integrations are code-complete but **unverified on device**.
 ## Privacy & security additions (v8)
 
 - **Consent:** `consents` (append-only log; latest per kind wins). Core consent gates the app (`/consent`),
-  `ai_coach` gates every `/coach/*` call in the app *and* in `requireCoach` (403 `needs_consent`). The shared
+  `ai_coach` gates every `/coach/*` call in the app _and_ in `requireCoach` (403 `needs_consent`). The shared
   `APP_TOKEN` is retired (`ALLOW_APP_TOKEN=true` to re-enable) because it can't carry consent.
 - **Profiles:** other users can read only `id, username, display_name, created_at` (column grants).
 - **Deletion:** `POST /account/delete` → `delete_account_data()` → `auth.admin.deleteUser` → FK cascade.

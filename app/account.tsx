@@ -102,7 +102,8 @@ export function SignIn({ intro, padTop = false }: { intro?: React.ReactNode; pad
             </Checkbox>
             <Checkbox checked={agreeHealth} onChange={setAgreeHealth} label="I consent to rep. storing my health and fitness data">
               I consent to rep. storing my health and fitness data (workouts, body measurements, steps, and wearable data if I connect it)
-              to run the app for me. It’s never sold.
+              to run the app for me, as described in the{' '}
+              <TextLink title="Consumer Health Data Privacy Policy" onPress={() => router.push('/health-privacy')} />. It’s never sold.
             </Checkbox>
           </View>
         ) : null}
@@ -114,6 +115,13 @@ export function SignIn({ intro, padTop = false }: { intro?: React.ReactNode; pad
         />
         {mode === 'in' ? <Button title="Forgot password?" variant="ghost" small onPress={reset} /> : null}
         {msg ? <Body style={{ fontSize: 14, color: msg.ok ? colors.latte : colors.sand }}>{msg.text}</Body> : null}
+        <Text style={{ fontFamily: fonts.body, fontSize: 12, lineHeight: 20, color: colors.textMuted, marginTop: space(4) }}>
+          <TextLink title="Privacy Policy" onPress={() => router.push('/privacy')} />
+          {'  ·  '}
+          <TextLink title="Consumer Health Data Privacy Policy" onPress={() => router.push('/health-privacy')} />
+          {'  ·  '}
+          <TextLink title="Terms of Use" onPress={() => router.push('/terms')} />
+        </Text>
       </Screen>
     </KeyboardAvoidingView>
   );

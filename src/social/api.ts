@@ -1,4 +1,5 @@
 // Everything that talks to the friends & challenges backend.
+import { Platform } from 'react-native';
 import type { Session } from '@supabase/supabase-js';
 import { setsDone, workoutDurationMin, workoutVolumeKg } from '../stats';
 import { healthForDate, todayKey, useStore, type Workout } from '../store';
@@ -32,7 +33,9 @@ export async function signIn(email: string, password: string) {
 }
 
 export async function sendPasswordReset(email: string) {
-  const { error } = await requireSb().auth.resetPasswordForEmail(email.trim());
+  // the email link comes back to this same site's reset screen (allowed in Supabase's redirect list)
+  const redirectTo = Platform.OS === 'web' && typeof window !== 'undefined' ? `${window.location.origin}/reset-password` : undefined;
+  const { error } = await requireSb().auth.resetPasswordForEmail(email.trim(), { redirectTo });
   if (error) throw new Error(friendly(error));
 }
 

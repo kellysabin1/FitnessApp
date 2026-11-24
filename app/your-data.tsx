@@ -93,6 +93,9 @@ export default function YourData() {
           <Button small variant="ghost" title="Privacy Policy" onPress={() => router.push('/privacy')} />
           <Button small variant="ghost" title="Terms of Use" onPress={() => router.push('/terms')} />
         </Row>
+        <Row gap={4}>
+          <Button small variant="ghost" title="Health Data Policy" onPress={() => router.push('/health-privacy')} />
+        </Row>
       </Card>
 
       {msg ? <Body style={{ fontSize: 14, color: msg.ok ? colors.olive : colors.sand }}>{msg.text}</Body> : null}

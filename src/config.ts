@@ -16,3 +16,6 @@ export const APP_URL = process.env.EXPO_PUBLIC_APP_URL ?? '';
  */
 export const PUSH_SERVER_URL = process.env.EXPO_PUBLIC_PUSH_SERVER_URL || 'https://rep-coach.onrender.com';
 export const PRIVACY_CONTACT = process.env.EXPO_PUBLIC_PRIVACY_CONTACT ?? '';
+/** Who runs rep. and which law governs the terms — shown in the Privacy Policy and Terms (src/legal.ts). */
+export const OPERATOR_NAME = process.env.EXPO_PUBLIC_OPERATOR_NAME ?? '';
+export const GOVERNING_LAW = process.env.EXPO_PUBLIC_GOVERNING_LAW ?? '';

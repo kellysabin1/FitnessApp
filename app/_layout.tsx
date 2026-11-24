@@ -92,8 +92,10 @@ export default function RootLayout() {
         <Stack.Screen name="reminders" options={{ presentation: 'modal', title: 'Reminders' }} />
         <Stack.Screen name="privacy" options={{ presentation: 'modal', title: 'Privacy Policy' }} />
         <Stack.Screen name="terms" options={{ presentation: 'modal', title: 'Terms of Use' }} />
+        <Stack.Screen name="health-privacy" options={{ presentation: 'modal', title: 'Consumer Health Data Privacy Policy' }} />
         <Stack.Screen name="your-data" options={{ presentation: 'modal', title: 'Privacy & your data' }} />
         <Stack.Screen name="consent" options={{ headerShown: false, gestureEnabled: false }} />
+        <Stack.Screen name="reset-password" options={{ headerShown: false }} />
         <Stack.Screen name="join/[code]" options={{ headerShown: false }} />
       </Stack>
     </ThemeProvider>

@@ -7,7 +7,7 @@ and bump the matching version in `src/consent.ts` when the change is material (p
 > **Status: draft, not legal advice.** Before inviting people beyond friends and family, have the policy, the
 > terms and this inventory reviewed by a qualified privacy lawyer (US: Washington My Health My Data Act,
 > state privacy laws, FTC Health Breach Notification Rule; EU/UK users: GDPR special-category data). See
-> "Before launch" below.
+> "Before launch" below, and the compliance review in [`LEGAL-REVIEW.md`](LEGAL-REVIEW.md).
 
 ## Data inventory
 
@@ -113,8 +113,8 @@ document their retention here and in the policy.
 
 - [ ] Lawyer review of `src/legal.ts` + this file (incl. Washington MHMDA consumer-health-data policy
       requirements and breach-notification duties).
-- [ ] Add a privacy contact email: set `EXPO_PUBLIC_PRIVACY_CONTACT` on Render (`rep-app` → Environment).
+- [ ] Operator name, privacy contact email and governing-law state (`EXPO_PUBLIC_OPERATOR_NAME`, `EXPO_PUBLIC_PRIVACY_CONTACT`, `EXPO_PUBLIC_GOVERNING_LAW`) — see `docs/LEGAL-REVIEW.md` §3.
 - [ ] Confirm Anthropic's API retention period and add it to the policy's AI section.
-- [ ] Set Supabase Auth → URL configuration → Site URL to the rep-app address (password-reset links).
+- [x] Password-reset links return to the app (`/reset-password`); rep-app addresses are in Supabase's redirect allow-list.
 - [ ] Turn on email confirmation + CAPTCHA (REP-4).
 - [ ] Consider Supabase Pro (backups, no pausing) and record backup retention here.
