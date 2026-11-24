@@ -46,18 +46,16 @@ Severity: **H** = likely violation or high risk · **M** = gap a regulator or la
 | 12  | **Age:** 16+ is stated, plus an attestation checkbox. COPPA risk is low.                                                                                                                                                                                                      | L   | OK. Don't market to teens.                                                                                                                                                                                                                                                                                               |
 | 13  | **AI output:** the coach could give harmful advice.                                                                                                                                                                                                                           | M   | Terms disclaim medical advice, the coach can be wrong, consult a doctor, stop if it hurts. The coach's own instructions already steer clear of medical advice.                                                                                                                                                           |
 
-## 3. Decisions only you can make
+## 3. Decisions (resolved 2026-11-24)
 
-- **A. Anthropic retention period.** Their commercial terms (eff. 2025-06-17) bar training on your data, and
-  the DPA (eff. 2025-02-24) makes them a processor. The exact retention for API data is on their privacy
-  center, which this session couldn't reach. Look it up (privacy.anthropic.com → "How long do you store
-  personal data") and add the number to the AI coach paragraph.
-- **B. Operator name** to publish ("rep. is run by ___"). Your legal name, or a business name if you form an LLC (recommended before
-  going public: it separates your personal assets from the app).
-- **C. Privacy contact email.** A dedicated address (e.g. a new Gmail like `rep.privacy@…`) rather than your personal one.
-- **D. Governing law:** your state of residence.
-
-Once you send B–D, they go in as settings and the policies update automatically.
+- **A. Anthropic retention:** per Anthropic's API data-retention documentation, conversation content isn't
+  retained by default for the model rep. uses; flagged content may be kept up to 2 years. Now stated in the
+  policy. Re-check if the coach model changes (some model families require 30-day retention). Note for the
+  attorney: the server enables Anthropic's server-side model fallback on refusals — confirm the fallback
+  model's retention terms match.
+- **B. Operator:** Kelly O'Reilly (individual). Consider an LLC before a public launch.
+- **C. Privacy contact:** the owner's email, as chosen by the owner. A dedicated address is still worth considering later.
+- **D. Governing law:** Virginia. Virginia's own privacy law (VCDPA) doesn't apply yet (100,000-consumer threshold).
 
 ## 4. Still needs a licensed attorney before a public launch
 
