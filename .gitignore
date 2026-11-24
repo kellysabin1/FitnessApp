@@ -39,3 +39,8 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# end-to-end test output
+dist-e2e/
+test-results/
+playwright-report/

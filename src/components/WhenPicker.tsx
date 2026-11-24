@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Text, View } from 'react-native';
 import { colors, fonts, space } from '../theme';
 import { Chip, Field, Row } from './ui';
@@ -17,8 +17,7 @@ const TIMES: { label: string; h: number; m: number }[] = [
   { label: 'Night', h: 20, m: 30 },
 ];
 
-const sameDay = (a: Date, b: Date) =>
-  a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+const sameDay = (a: Date, b: Date) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 
 function lastDays(n: number) {
   const out: Date[] = [];
@@ -58,7 +57,12 @@ export function WhenPicker({ value, onChange }: { value: When; onChange: (w: Whe
   const [timeText, setTimeText] = useState(fmtTime(value.start));
   const [durText, setDurText] = useState(String(value.durationMin));
 
-  useEffect(() => setTimeText(fmtTime(value.start)), [value.start]);
+  // keep the typed time in step when the start changes from outside (adjusting state during render, not in an effect)
+  const [seenStart, setSeenStart] = useState(value.start);
+  if (value.start !== seenStart) {
+    setSeenStart(value.start);
+    setTimeText(fmtTime(value.start));
+  }
 
   const setDay = (d: Date) => {
     const n = new Date(d);
@@ -117,9 +121,7 @@ export function WhenPicker({ value, onChange }: { value: When; onChange: (w: Whe
           suffix="min"
         />
       </Row>
-      {isFuture(value) ? (
-        <Text style={[label, { color: colors.sand }]}>That time hasn’t happened yet — pick an earlier time.</Text>
-      ) : null}
+      {isFuture(value) ? <Text style={[label, { color: colors.sand }]}>That time hasn’t happened yet — pick an earlier time.</Text> : null}
     </View>
   );
 }

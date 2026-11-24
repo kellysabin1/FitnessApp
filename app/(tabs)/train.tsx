@@ -47,7 +47,11 @@ export default function Train() {
 
       <SectionHeader title="Your splits" action="+ New split" onAction={() => router.push('/split-new')} />
       {s.splits.length === 0 ? (
-        <Empty icon="folder-open-outline" title="No splits yet" text="A split is a folder of workouts you rotate through. Build your own, let your coach design one, or start from a ready-made split.">
+        <Empty
+          icon="folder-open-outline"
+          title="No splits yet"
+          text="A split is a folder of workouts you rotate through. Build your own, let your coach design one, or start from a ready-made split."
+        >
           <Button title="Create a split" icon="add" onPress={() => router.push('/split-new')} />
         </Empty>
       ) : (
@@ -56,10 +60,16 @@ export default function Train() {
             <Card key={sp.id} onPress={() => router.push({ pathname: '/split/[id]', params: { id: sp.id } })}>
               <Row style={{ justifyContent: 'space-between' }}>
                 <Row gap={2} style={{ flex: 1 }}>
-                  <Icon name={sp.id === s.activeSplitId ? 'folder-open' : 'folder-outline'} size={18} color={sp.id === s.activeSplitId ? colors.latte : colors.textMuted} />
-                  <H2 style={{ fontSize: 20, flex: 1 }} >{sp.name}</H2>
+                  <Icon
+                    name={sp.id === s.activeSplitId ? 'folder-open' : 'folder-outline'}
+                    size={18}
+                    color={sp.id === s.activeSplitId ? colors.latte : colors.textMuted}
+                  />
+                  <H2 style={{ fontSize: 20, flex: 1 }}>{sp.name}</H2>
                 </Row>
-                {sp.id === s.activeSplitId ? <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 11, color: colors.latte, letterSpacing: 1 }}>ACTIVE</Text> : null}
+                {sp.id === s.activeSplitId ? (
+                  <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 11, color: colors.latte, letterSpacing: 1 }}>ACTIVE</Text>
+                ) : null}
               </Row>
               <Body muted numberOfLines={1} style={{ fontSize: 13, marginTop: space(1) }}>
                 {sp.workouts.length} workout{sp.workouts.length === 1 ? '' : 's'} · {sp.workouts.map((w) => w.title).join(' · ')}
@@ -75,9 +85,15 @@ export default function Train() {
           const rec = (t.goals ?? []).some((g) => s.profile.goals.includes(g));
           return (
             <Card key={t.title} tone={t.tone} onPress={() => startFromTemplate(t)}>
-              {rec ? <Eyebrow color={colors.latte} style={{ marginBottom: space(1) }}>Recommended for your goals</Eyebrow> : null}
+              {rec ? (
+                <Eyebrow color={colors.latte} style={{ marginBottom: space(1) }}>
+                  Recommended for your goals
+                </Eyebrow>
+              ) : null}
               <H2 style={{ fontSize: 21 }}>{t.title}</H2>
-              <Body muted numberOfLines={1} style={{ fontSize: 13 }}>{t.exercises.join(' · ')}</Body>
+              <Body muted numberOfLines={1} style={{ fontSize: 13 }}>
+                {t.exercises.join(' · ')}
+              </Body>
             </Card>
           );
         })}
@@ -88,7 +104,15 @@ export default function Train() {
           <SectionHeader title="Personal records" />
           <Card>
             {prs.map((pr, i) => (
-              <Row key={pr.name} style={{ justifyContent: 'space-between', paddingVertical: space(2.5), borderTopWidth: i ? 1 : 0, borderTopColor: colors.line }}>
+              <Row
+                key={pr.name}
+                style={{
+                  justifyContent: 'space-between',
+                  paddingVertical: space(2.5),
+                  borderTopWidth: i ? 1 : 0,
+                  borderTopColor: colors.line,
+                }}
+              >
                 <View style={{ flex: 1 }}>
                   <Text style={{ fontFamily: fonts.bodyMedium, color: colors.cream, fontSize: 15 }}>{pr.name}</Text>
                   <Text style={{ fontFamily: fonts.body, color: colors.textFaint, fontSize: 12 }}>
@@ -107,7 +131,11 @@ export default function Train() {
 
       <SectionHeader title="History" />
       {done.length === 0 ? (
-        <Empty icon="barbell-outline" title="No workouts yet" text="Your finished sessions will live here, with volume, duration and PRs." />
+        <Empty
+          icon="barbell-outline"
+          title="No workouts yet"
+          text="Your finished sessions will live here, with volume, duration and PRs."
+        />
       ) : (
         <View style={{ gap: space(3) }}>
           {done.map((w) => (

@@ -8,7 +8,9 @@ export default function NotFoundScreen() {
       <Stack.Screen options={{ title: '' }} />
       <Screen>
         <Display>Lost?</Display>
-        <Body muted style={{ marginVertical: space(4) }}>This screen doesn’t exist.</Body>
+        <Body muted style={{ marginVertical: space(4) }}>
+          This screen doesn’t exist.
+        </Body>
         <Button title="Back to Today" onPress={() => router.replace('/')} />
       </Screen>
     </>

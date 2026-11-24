@@ -10,7 +10,9 @@ export function PushPrompt() {
   const [err, setErr] = useState<string | null>(null);
 
   useEffect(() => {
-    pushState().then(setState).catch(() => setState('unsupported'));
+    pushState()
+      .then(setState)
+      .catch(() => setState('unsupported'));
   }, []);
 
   if (!state || state === 'on' || state === 'unsupported') return null;
@@ -31,7 +33,9 @@ export function PushPrompt() {
         </Body>
       ) : (
         <>
-          <Body muted style={{ fontSize: 14 }}>Get a ping when friends finish a workout or nudge you.</Body>
+          <Body muted style={{ fontSize: 14 }}>
+            Get a ping when friends finish a workout or nudge you.
+          </Body>
           <Button
             small
             title="Turn on notifications"

@@ -52,13 +52,13 @@ export default function NewChallenge() {
     ? 'Give your challenge a name.'
     : !lengthOk
       ? 'Length should be between 1 and 120 days.'
-    : planOnly && plan.length === 0
-      ? 'Add at least one workout to the plan.'
-      : !(scoring.workouts || scoring.steps || scoring.streaks)
-        ? 'Pick at least one way to earn points.'
-        : scoring.steps && !(goal >= 1000 && goal <= 50000)
-          ? 'Step goal should be between 1,000 and 50,000.'
-          : null;
+      : planOnly && plan.length === 0
+        ? 'Add at least one workout to the plan.'
+        : !(scoring.workouts || scoring.steps || scoring.streaks)
+          ? 'Pick at least one way to earn points.'
+          : scoring.steps && !(goal >= 1000 && goal <= 50000)
+            ? 'Step goal should be between 1,000 and 50,000.'
+            : null;
 
   const create = async () => {
     setBusy(true);
@@ -124,7 +124,9 @@ export default function NewChallenge() {
 
       <View style={{ gap: space(2) }}>
         <Text style={label}>Add daily tasks? (optional, up to 3)</Text>
-        <Body muted style={{ fontSize: 13 }}>Small habits everyone ticks off each day — +{TASK_POINTS} points each.</Body>
+        <Body muted style={{ fontSize: 13 }}>
+          Small habits everyone ticks off each day — +{TASK_POINTS} points each.
+        </Body>
         {tasks.map((t) => (
           <Row key={t} style={{ justifyContent: 'space-between', paddingVertical: space(1) }}>
             <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 15, color: colors.cream, flex: 1 }}>• {t}</Text>
@@ -141,12 +143,7 @@ export default function NewChallenge() {
               ))}
             </Row>
             <Row gap={2}>
-              <Field
-                style={{ flex: 1 }}
-                value={taskText}
-                onChangeText={(t) => setTaskText(t.slice(0, 60))}
-                placeholder="Write your own"
-              />
+              <Field style={{ flex: 1 }} value={taskText} onChangeText={(t) => setTaskText(t.slice(0, 60))} placeholder="Write your own" />
               <Button
                 small
                 title="Add"
@@ -159,7 +156,9 @@ export default function NewChallenge() {
             </Row>
           </>
         ) : (
-          <Body muted style={{ fontSize: 12 }}>That’s the max of 3 — remove one to swap it.</Body>
+          <Body muted style={{ fontSize: 12 }}>
+            That’s the max of 3 — remove one to swap it.
+          </Body>
         )}
       </View>
 
@@ -205,6 +204,10 @@ export default function NewChallenge() {
         <Field label="Daily step goal" value={stepGoal} onChangeText={setStepGoal} keyboardType="number-pad" suffix="steps" />
       ) : null}
 
+      <Body muted style={{ fontSize: 13 }}>
+        Members will see your workouts (exercises, sets, weights, reps) and daily steps from the challenge dates only — never your body
+        measurements. Leave any time.
+      </Body>
       <Button title="Create challenge" icon="trophy-outline" loading={busy} disabled={!!problem} onPress={create} />
       {problem && name.trim() ? <Body style={{ color: colors.sand, fontSize: 13, marginTop: -space(3) }}>{problem}</Body> : null}
       {err ? <Body style={{ color: colors.sand, fontSize: 14 }}>{err}</Body> : null}
@@ -212,7 +215,19 @@ export default function NewChallenge() {
   );
 }
 
-function ModeCard({ icon, title, text, active, onPress }: { icon: IconName; title: string; text: string; active: boolean; onPress: () => void }) {
+function ModeCard({
+  icon,
+  title,
+  text,
+  active,
+  onPress,
+}: {
+  icon: IconName;
+  title: string;
+  text: string;
+  active: boolean;
+  onPress: () => void;
+}) {
   return (
     <Pressable
       onPress={onPress}
@@ -229,7 +244,11 @@ function ModeCard({ icon, title, text, active, onPress }: { icon: IconName; titl
       <Icon name={icon} size={20} color={active ? colors.cream : colors.textMuted} />
       <View style={{ flex: 1 }}>
         <Text style={{ fontFamily: fonts.bodyBold, fontSize: 15, color: colors.cream }}>{title}</Text>
-        <Text style={{ fontFamily: fonts.body, fontSize: 13, lineHeight: 18, color: active ? colors.text : colors.textMuted, marginTop: 2 }}>{text}</Text>
+        <Text
+          style={{ fontFamily: fonts.body, fontSize: 13, lineHeight: 18, color: active ? colors.text : colors.textMuted, marginTop: 2 }}
+        >
+          {text}
+        </Text>
       </View>
       <Icon name={active ? 'radio-button-on' : 'radio-button-off'} size={20} color={active ? colors.cream : colors.textFaint} />
     </Pressable>

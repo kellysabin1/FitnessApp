@@ -21,4 +21,3 @@ export function addExercisesByName(workoutId: string, names: string[]) {
     exercises: [...w.exercises, ...names.map((n) => makeExercise(n, workoutId))],
   }));
 }
-

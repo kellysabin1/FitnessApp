@@ -66,9 +66,15 @@ export const Row = ({ children, style, gap = 3 }: { children: React.ReactNode; s
 );
 
 // ---------- Type ----------
-export const Eyebrow = ({ children, color = colors.latte, style }: { children: React.ReactNode; color?: string; style?: StyleProp<TextStyle> }) => (
-  <Text style={[styles.eyebrow, { color }, style]}>{children}</Text>
-);
+export const Eyebrow = ({
+  children,
+  color = colors.latte,
+  style,
+}: {
+  children: React.ReactNode;
+  color?: string;
+  style?: StyleProp<TextStyle>;
+}) => <Text style={[styles.eyebrow, { color }, style]}>{children}</Text>;
 export const Display = ({ children, style }: { children: React.ReactNode; style?: StyleProp<TextStyle> }) => (
   <Text style={[styles.display, style]}>{children}</Text>
 );
@@ -138,12 +144,7 @@ export function Card({
     inner = <View style={[styles.card, style]}>{children}</View>;
   } else {
     inner = (
-      <LinearGradient
-        colors={gradients[tone]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={[styles.card, styles.textured, style]}
-      >
+      <LinearGradient colors={gradients[tone]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={[styles.card, styles.textured, style]}>
         {children}
       </LinearGradient>
     );
@@ -151,7 +152,10 @@ export function Card({
   if (!onPress) return inner;
   return (
     <Pressable
-      onPress={() => { tap(); onPress(); }}
+      onPress={() => {
+        tap();
+        onPress();
+      }}
       style={({ pressed }) => ({ flexDirection: 'column', opacity: pressed ? 0.88 : 1, transform: [{ scale: pressed ? 0.99 : 1 }] })}
     >
       {inner}
@@ -223,7 +227,13 @@ export function Button({
   return (
     <Pressable
       disabled={disabled || loading}
-      onPress={() => { tap(); onPress(); }}
+      accessibilityRole="button"
+      accessibilityLabel={title}
+      accessibilityState={{ disabled: !!(disabled || loading), busy: !!loading }}
+      onPress={() => {
+        tap();
+        onPress();
+      }}
       style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }, style]}
     >
       {variant === 'primary' ? (
@@ -249,7 +259,10 @@ export function Button({
 export function Chip({ label, active, onPress, icon }: { label: string; active?: boolean; onPress?: () => void; icon?: IconName }) {
   return (
     <Pressable
-      onPress={() => { tap(); onPress?.(); }}
+      onPress={() => {
+        tap();
+        onPress?.();
+      }}
       style={[styles.chip, active && { backgroundColor: colors.burgundy, borderColor: 'rgba(216,193,166,0.45)' }]}
     >
       <Row gap={1.5}>
@@ -271,6 +284,7 @@ export function Field({
       {label ? <Text style={styles.label}>{label}</Text> : null}
       <View style={styles.inputWrap}>
         <TextInput
+          accessibilityLabel={label ?? props.placeholder}
           placeholderTextColor={colors.textFaint}
           style={[styles.input, props.multiline && styles.inputMultiline]}
           {...props}
@@ -303,7 +317,9 @@ export function Empty({ icon, title, text, children }: { icon: IconName; title: 
         <Icon name={icon} size={22} color={colors.latte} />
       </View>
       <H2 style={{ textAlign: 'center' }}>{title}</H2>
-      <Body muted style={{ textAlign: 'center', maxWidth: 280 }}>{text}</Body>
+      <Body muted style={{ textAlign: 'center', maxWidth: 280 }}>
+        {text}
+      </Body>
       {children ? <View style={{ marginTop: space(3), alignSelf: 'stretch' }}>{children}</View> : null}
     </Card>
   );

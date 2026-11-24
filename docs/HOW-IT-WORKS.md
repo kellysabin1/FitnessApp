@@ -4,12 +4,12 @@
 
 rep. is made of **four pieces** that talk to each other:
 
-| Piece | What it is | Where it lives | What it does |
-|---|---|---|---|
-| **The app** | What you see and tap | Render (as a website: **rep-app**) | Logging workouts, charts, the look & feel |
-| **The coach server** | A small program running 24/7 | Render (**rep-coach**) | Talks to the AI, sends notifications |
-| **The database** | Online storage | Supabase | Accounts, friends, challenges, shared workouts |
-| **The code** | The instructions for all of the above | GitHub (**kellysabin1/FitnessApp**) | The master copy everything is built from |
+| Piece                | What it is                            | Where it lives                      | What it does                                   |
+| -------------------- | ------------------------------------- | ----------------------------------- | ---------------------------------------------- |
+| **The app**          | What you see and tap                  | Render (as a website: **rep-app**)  | Logging workouts, charts, the look & feel      |
+| **The coach server** | A small program running 24/7          | Render (**rep-coach**)              | Talks to the AI, sends notifications           |
+| **The database**     | Online storage                        | Supabase                            | Accounts, friends, challenges, shared workouts |
+| **The code**         | The instructions for all of the above | GitHub (**kellysabin1/FitnessApp**) | The master copy everything is built from       |
 
 Think of GitHub as the **recipe book**, Render as the **kitchen** that cooks the recipes and serves them,
 and Supabase as the **pantry** where shared stuff is stored.
@@ -24,7 +24,7 @@ and Supabase as the **pantry** where shared stuff is stored.
 
 ## The main tools ("frameworks")
 
-- **React Native + Expo** — lets one set of code become an **iPhone app *and* a website**. Right now you
+- **React Native + Expo** — lets one set of code become an **iPhone app _and_ a website**. Right now you
   use the website version; the same code becomes the real iPhone app later.
 - **Expo Router** — handles moving between screens (each file in the `app/` folder is a screen).
 - **Express** — a simple toolkit for building the coach server.
@@ -51,18 +51,18 @@ automatically (a few minutes). Close and reopen rep. to get it. The only excepti
 - **In your account (Supabase):** once signed in, your finished workouts and steps are backed up, so you
   can sign in on a new phone and get them back.
 - **What friends can see:** only people in a challenge with you, and only your workouts and steps from
-  *inside that challenge's dates*. Strangers see nothing. These rules live in the database itself, so
+  _inside that challenge's dates_. Strangers see nothing. These rules live in the database itself, so
   they can't be bypassed from the app.
 
 ## The secrets (keep private)
 
-| Secret | Where it's stored | Never... |
-|---|---|---|
-| Anthropic API key | Render → rep-coach → Environment | ...paste it anywhere else |
+| Secret                     | Where it's stored                                | Never...                                                 |
+| -------------------------- | ------------------------------------------------ | -------------------------------------------------------- |
+| Anthropic API key          | Render → rep-coach → Environment                 | ...paste it anywhere else                                |
 | Coach password (APP_TOKEN) | Render → rep-coach → Environment, and in the app | ...post it publicly (anyone with it uses your AI credit) |
-| Supabase secret key | Render → rep-coach → Environment | ...share it with anyone |
+| Supabase secret key        | Render → rep-coach → Environment                 | ...share it with anyone                                  |
 
-Safe to be public (and built into the app): the Supabase project URL and *publishable* key, and the
+Safe to be public (and built into the app): the Supabase project URL and _publishable_ key, and the
 rep-coach address.
 
 ## The accounts you now own
@@ -71,7 +71,7 @@ rep-coach address.
 - **Render** — hosting the app and coach
 - **Supabase** — the database
 - **Anthropic Console** — the AI (has your spend limit)
-- *(later)* **Apple Developer** — needed for the real iPhone app
+- _(later)_ **Apple Developer** — needed for the real iPhone app
 
 ## What's where in the code
 
@@ -98,3 +98,20 @@ RingConn and Oura** data, plus App Store distribution.
 
 **Before inviting strangers / going public:** a privacy policy and terms (you handle health data),
 licensed versions of any Pinterest images, and possibly paid hosting plans.
+
+## Costs, alerts and monitoring
+
+- **Anthropic spend (do this once):** console.anthropic.com → Settings → Limits → set a monthly spend
+  limit (e.g. $20), and under Billing → Usage alerts add email alerts at 50% and 80%. Owner: Kelly.
+- **Errors:** if the app or server hits an error, a scrubbed report (no emails, ids or numbers) lands in
+  Supabase → Table editor → `error_events`, and you get a push notification (at most one an hour).
+- **Downtime:** Supabase pings the coach server every 5 minutes. If it doesn't answer, it's logged in
+  `error_events` (source `uptime`) and you get a push once it's back. Alerts go to the accounts listed in
+  `app_secrets.owner_user_ids` (currently @kellyoreilly).
+- **Tests:** `npm run lint`, `npm run typecheck`, `npm run e2e` (browser tests), `npm run test:db`
+  (database security), `cd server && npm test` (error scrubbing).
+
+## Privacy
+
+Everything about what rep. stores, who can see it, consent, export and deletion is in
+[`docs/PRIVACY.md`](PRIVACY.md). The in-app Privacy Policy and Terms live in `src/legal.ts`.

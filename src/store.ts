@@ -5,15 +5,15 @@ import type { ExerciseCategory, ExerciseDef, ExerciseKind } from './exercises';
 import type { PlannedExercise, Split, Target } from './training';
 import type { Units } from './units';
 
+export type ConsentKind = 'terms_privacy' | 'health_data' | 'ai_coach' | 'challenge_sharing';
+export interface ConsentRecord {
+  version: number;
+  granted: boolean;
+  at: string;
+}
+
 // ---------- Types ----------
-export type Goal =
-  | 'build_strength'
-  | 'grow_glutes'
-  | 'lose_fat'
-  | 'recomp'
-  | 'endurance'
-  | 'flexibility'
-  | 'consistency';
+export type Goal = 'build_strength' | 'grow_glutes' | 'lose_fat' | 'recomp' | 'endurance' | 'flexibility' | 'consistency';
 
 export const GOAL_LABEL: Record<Goal, string> = {
   build_strength: 'Get stronger',
@@ -173,6 +173,10 @@ interface State {
   pendingInvite?: string;
   /** a day you marked as a rest day (no reminder that day) */
   restDay?: string;
+  /** Latest answer per consent kind (see src/consent.ts) — mirrors the account's consent log. */
+  consents: Partial<Record<ConsentKind, ConsentRecord>>;
+  /** Consents given before the account had a profile row; saved to the account right after. */
+  pendingConsents: (ConsentRecord & { kind: ConsentKind; context?: string })[];
   /** Account id this device's data belongs to (so a different person signing in starts clean). */
   dataOwner?: string;
   /** Last local change to profile, units or custom exercises (ISO) — used to sync. */
@@ -245,6 +249,8 @@ const initial = {
   lastSyncAt: undefined,
   pendingDeletes: [] as string[],
   pendingBodyDeletes: [] as string[],
+  consents: {} as Partial<Record<ConsentKind, ConsentRecord>>,
+  pendingConsents: [] as (ConsentRecord & { kind: ConsentKind; context?: string })[],
   dataOwner: undefined as string | undefined,
   userDataUpdatedAt: undefined as string | undefined,
   server: {
@@ -293,9 +299,7 @@ export const useStore = create<State>()(
       },
       updateWorkout: (id, fn) =>
         set({
-          workouts: sortWorkouts(
-            get().workouts.map((w) => (w.id === id ? { ...fn(w), updatedAt: new Date().toISOString() } : w)),
-          ),
+          workouts: sortWorkouts(get().workouts.map((w) => (w.id === id ? { ...fn(w), updatedAt: new Date().toISOString() } : w))),
         }),
       finishWorkout: (id, mood) =>
         set({
@@ -331,8 +335,7 @@ export const useStore = create<State>()(
         for (const d of days) next[`${d.source}:${d.date}`] = { ...next[`${d.source}:${d.date}`], ...stripUndefined(d) } as HealthDay;
         set({ health: next });
       },
-      addCoachMessage: (m) =>
-        set({ coach: [...get().coach, { ...m, id: uid(), at: new Date().toISOString() }] }),
+      addCoachMessage: (m) => set({ coach: [...get().coach, { ...m, id: uid(), at: new Date().toISOString() }] }),
       clearCoach: () => set({ coach: [] }),
       addCustomExercise: (e) => {
         const rest = (get().customExercises ?? []).filter((x) => x.name.toLowerCase() !== e.name.toLowerCase());
@@ -356,7 +359,10 @@ export const useStore = create<State>()(
       saveTarget: (t) => {
         const next = { ...t, updatedAt: now() };
         const exists = get().targets.some((x) => x.id === t.id);
-        set({ targets: exists ? get().targets.map((x) => (x.id === t.id ? next : x)) : [...get().targets, next], userDataUpdatedAt: now() });
+        set({
+          targets: exists ? get().targets.map((x) => (x.id === t.id ? next : x)) : [...get().targets, next],
+          userDataUpdatedAt: now(),
+        });
       },
       deleteTarget: (id) => set({ targets: get().targets.filter((x) => x.id !== id), userDataUpdatedAt: now() }),
       deleteCustomExercise: (name) =>

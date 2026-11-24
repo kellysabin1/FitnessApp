@@ -208,3 +208,56 @@ insert into reminder_settings(user_id, tz) values (:'B', 'Mars/Olympus') on conf
 select count(*) from due_reminders() where user_id = :'B';
 update reminder_settings set remind_at = ((now() at time zone 'UTC')::time + interval '1 hour')::time where user_id = :'C';
 select count(*) from due_reminders() where user_id = :'C' and (now() at time zone 'UTC')::time < '23:00';
+
+-- ───── v8: privacy, consent, monitoring, account deletion ─────
+reset role; set role authenticated;
+\echo '--- T53 others can read a username but not coach access (expect kelly, then permission ERROR):'
+select pg_temp.as_user(:'B');
+select username from profiles where id = :'A';
+select coach_enabled from profiles where id = :'A';
+\echo '--- T54 owner records consent; others cannot see it (expect 1, then 0):'
+select pg_temp.as_user(:'A');
+insert into consents(user_id, kind, version) values (:'A', 'ai_coach', 1);
+select count(*) from consents;
+select pg_temp.as_user(:'B'); select count(*) from consents where user_id = :'A';
+\echo '--- T55 consent log is append-only: no edits, no deletes (expect 2 permission ERRORs):'
+select pg_temp.as_user(:'A');
+update consents set granted = false where user_id = :'A';
+delete from consents where user_id = :'A';
+\echo '--- T56 consents cannot be backdated or recorded for someone else (expect 2 RLS ERRORs):'
+insert into consents(user_id, kind, version, at) values (:'A', 'health_data', 1, now() - interval '1 year');
+insert into consents(user_id, kind, version) values (:'B', 'health_data', 1);
+\echo '--- T57 users cannot read or write error logs or uptime data (expect 0, RLS ERROR, 0):'
+select count(*) from error_events;
+insert into error_events(source, kind, message) values ('app', 'x', 'y');
+select count(*) from uptime_pings;
+\echo '--- T58 users cannot call the account-deletion helper (expect permission ERROR):'
+select delete_account_data(:'B');
+\echo '--- T59 before deletion, Bestie has rows across the app (expect > 0):'
+reset role;
+create or replace function pg_temp.refs(p uuid) returns bigint language plpgsql as $$
+declare r record; n bigint := 0; c bigint;
+begin
+  for r in select table_name, column_name from information_schema.columns
+           where table_schema = 'public' and data_type = 'uuid'
+             and column_name in ('user_id', 'requester', 'addressee', 'created_by', 'id')
+             and table_name not in ('challenges') or (table_schema = 'public' and table_name = 'challenges' and column_name = 'created_by')
+  loop
+    execute format('select count(*) from public.%I where %I = $1', r.table_name, r.column_name) into c using p;
+    n := n + c;
+  end loop;
+  select count(*) into c from public.activity where payload ->> 'to' = p::text;
+  return n + c;
+end $$;
+insert into activity(challenge_id, user_id, kind, payload)
+  select id, :'A', 'nudge', jsonb_build_object('to', :'B') from challenges limit 1;
+select pg_temp.refs(:'B') > 0 as has_rows;
+\echo '--- T60 server deletes the account (expect no ERROR):'
+set role service_role;
+select delete_account_data(:'B');
+reset role;
+delete from auth.users where id = :'B';
+\echo '--- T61 after deletion, nothing anywhere references Bestie (expect 0):'
+select pg_temp.refs(:'B');
+\echo '--- T62 Kelly keeps her own data (expect > 0):'
+select pg_temp.refs(:'A') > 0 as kelly_intact;

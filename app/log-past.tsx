@@ -3,12 +3,11 @@ import { useEffect, useState } from 'react';
 import { Text, View } from 'react-native';
 import { Body, Button, Chip, Field, Row, Screen } from '@/src/components/ui';
 import { isFuture, When, WhenPicker } from '@/src/components/WhenPicker';
-import { useStore } from '@/src/store';
+import { useStore, todayKey } from '@/src/store';
 import { TEMPLATES } from '@/src/templates';
 import { colors, fonts, space } from '@/src/theme';
 import { addExercisesByName } from '@/src/workoutActions';
 import { type PlanItem, runningPlanItems } from '@/src/social/api';
-import { todayKey } from '@/src/store';
 
 /** Default: this morning if it's afternoon or later, otherwise an hour ago. */
 function defaultWhen(): When {
@@ -32,7 +31,9 @@ export default function LogPastWorkout() {
 
   // Plan workouts from challenges running on the chosen day
   useEffect(() => {
-    runningPlanItems(day).then(setPlanItems).catch(() => setPlanItems([]));
+    runningPlanItems(day)
+      .then(setPlanItems)
+      .catch(() => setPlanItems([]));
   }, [day]);
 
   const pick = (t: string | null) => {
@@ -62,7 +63,13 @@ export default function LogPastWorkout() {
           <Text style={label}>From your challenges — counts toward the plan</Text>
           <Row gap={2} style={{ flexWrap: 'wrap' }}>
             {planItems.map(({ item }) => (
-              <Chip key={item.title} icon="trophy-outline" label={item.title} active={planItem?.title === item.title} onPress={() => pickPlan(item)} />
+              <Chip
+                key={item.title}
+                icon="trophy-outline"
+                label={item.title}
+                active={planItem?.title === item.title}
+                onPress={() => pickPlan(item)}
+              />
             ))}
           </Row>
         </View>

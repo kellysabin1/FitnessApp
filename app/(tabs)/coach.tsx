@@ -5,6 +5,7 @@ import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollVie
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Body, Button, Card, Display, Eyebrow, H2, Icon, Italic, Row, tap } from '@/src/components/ui';
 import { askCoach, generatePlan } from '@/src/coach';
+import { hasConsent, recordConsent } from '@/src/consent';
 import { useStore } from '@/src/store';
 import { exerciseLabel, saveToCoachFolder, startPlannedWorkout, toPlanned } from '@/src/splits';
 import { checkCoachAccess, type CoachAccess, isCoachConfigured, usesAccountForCoach } from '@/src/api';
@@ -80,6 +81,7 @@ export default function Coach() {
       return <CoachNotSetUp insetTop={insets.top} variant="no_access" username={s.account?.username} />;
     }
     if (access === 'signed_out') return <CoachNotSetUp insetTop={insets.top} variant="session_expired" />;
+    if (!hasConsent('ai_coach', s.consents)) return <CoachConsent insetTop={insets.top} />;
   } else {
     const configured = isCoachConfigured(s.server);
     if (!configured) return <CoachNotSetUp insetTop={insets.top} variant="signed_out" />;
@@ -176,7 +178,13 @@ export default function Coach() {
                           onPress={() =>
                             router.push({
                               pathname: '/target-new',
-                              params: { kind: t.kind, title: t.title, exercise: t.exercise ?? '', value: String(t.target_value), weeks: String(t.weeks) },
+                              params: {
+                                kind: t.kind,
+                                title: t.title,
+                                exercise: t.exercise ?? '',
+                                value: String(t.target_value),
+                                weeks: String(t.weeks),
+                              },
                             })
                           }
                         />
@@ -216,7 +224,14 @@ export default function Coach() {
           {s.coach.length === 0 ? (
             <View style={{ gap: space(2) }}>
               {PROMPTS.map((p) => (
-                <Pressable key={p} onPress={() => { tap(); send(p); }} style={styles.prompt}>
+                <Pressable
+                  key={p}
+                  onPress={() => {
+                    tap();
+                    send(p);
+                  }}
+                  style={styles.prompt}
+                >
                   <Text style={styles.promptText}>{p}</Text>
                   <Icon name="arrow-forward" size={14} color={colors.textFaint} />
                 </Pressable>
@@ -257,7 +272,11 @@ export default function Coach() {
             onSubmitEditing={() => send(text)}
             blurOnSubmit={false}
           />
-          <Pressable onPress={() => send(text)} disabled={!text.trim() || sending} style={[styles.send, (!text.trim() || sending) && { opacity: 0.4 }]}>
+          <Pressable
+            onPress={() => send(text)}
+            disabled={!text.trim() || sending}
+            style={[styles.send, (!text.trim() || sending) && { opacity: 0.4 }]}
+          >
             <Icon name="arrow-up" size={18} color={colors.bg} />
           </Pressable>
         </View>
@@ -299,6 +318,61 @@ const LOCKED: Record<Locked, { eyebrow: string; title: string; body: string; cta
   },
 };
 
+/** First use of the coach (REP-6): say exactly what's sent to Anthropic, and only continue with a yes. */
+function CoachConsent({ insetTop }: { insetTop: number }) {
+  const [busy, setBusy] = useState(false);
+  const items = [
+    'Your profile: name, age, sex, height, goals, experience, equipment, injuries or preferences you’ve typed in',
+    'Weight and body-fat entries, and your targets and current split',
+    'Your recent workouts and estimated maxes',
+    'A 7-day summary from connected wearables (sleep, heart rate, HRV, steps)',
+    'What you type in the chat',
+  ];
+  return (
+    <LinearGradient colors={gradients.screen} style={{ flex: 1 }}>
+      <ScrollView contentContainerStyle={{ paddingTop: insetTop + space(4), paddingHorizontal: space(5), paddingBottom: space(28) }}>
+        <Eyebrow>Your coach</Eyebrow>
+        <Display style={{ marginTop: space(2) }}>
+          Before we <Italic>start.</Italic>
+        </Display>
+        <Card tone="satin" style={{ marginTop: space(6), gap: space(3) }}>
+          <Row gap={2}>
+            <Icon name="shield-checkmark-outline" size={15} color={colors.latte} />
+            <Eyebrow color={colors.latte}>What the coach uses</Eyebrow>
+          </Row>
+          <Body>
+            Each time you ask the coach something, rep. sends this to Anthropic’s Claude AI so it can answer with your data in mind:
+          </Body>
+          {items.map((t) => (
+            <Body key={t} muted style={{ fontSize: 14 }}>
+              · {t}
+            </Body>
+          ))}
+          <Body muted style={{ fontSize: 13 }}>
+            Anthropic processes it for rep. and may not use it to train its models. rep.’s server doesn’t keep it, and your chat stays on
+            this phone. You can turn the coach off any time in You → Privacy & your data.
+          </Body>
+          <Button
+            title="Allow the AI coach"
+            icon="checkmark"
+            loading={busy}
+            style={{ marginTop: space(2) }}
+            onPress={async () => {
+              setBusy(true);
+              await recordConsent('ai_coach');
+              setBusy(false);
+            }}
+          />
+          <Button title="Read the Privacy Policy" variant="ghost" small onPress={() => router.push('/privacy')} />
+          <Body muted style={{ fontSize: 13 }}>
+            Not now? Everything else in rep. works without it.
+          </Body>
+        </Card>
+      </ScrollView>
+    </LinearGradient>
+  );
+}
+
 /** Shown when the coach isn't available to this person yet. */
 function CoachNotSetUp({ insetTop, variant, username }: { insetTop: number; variant: Locked; username?: string }) {
   const v = LOCKED[variant];
@@ -321,7 +395,9 @@ function CoachNotSetUp({ insetTop, variant, username }: { insetTop: number; vari
               Tell them your username: <Text style={{ fontFamily: fonts.bodyBold, color: colors.cream }}>@{username}</Text>
             </Body>
           ) : null}
-          <Body muted style={{ fontSize: 13 }}>Everything else — workouts, PRs, weigh-ins, goals and challenges — works without it.</Body>
+          <Body muted style={{ fontSize: 13 }}>
+            Everything else — workouts, PRs, weigh-ins, goals and challenges — works without it.
+          </Body>
           <Button title={v.cta} icon="arrow-forward" style={{ marginTop: space(2) }} onPress={() => router.push(v.to)} />
           {variant === 'signed_out' ? (
             <Button title="I have a coach password instead" variant="ghost" small onPress={() => router.push('/you')} />
@@ -373,6 +449,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.line,
   },
-  input: { flex: 1, color: colors.cream, fontFamily: fonts.body, fontSize: 15, maxHeight: 120, paddingVertical: space(2.5), outlineStyle: 'none' as never },
+  input: {
+    flex: 1,
+    color: colors.cream,
+    fontFamily: fonts.body,
+    fontSize: 15,
+    maxHeight: 120,
+    paddingVertical: space(2.5),
+    outlineStyle: 'none' as never,
+  },
   send: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.latte, alignItems: 'center', justifyContent: 'center' },
 });

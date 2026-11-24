@@ -1,7 +1,19 @@
 import { useStore } from '../store';
 import { syncUp } from './api';
 
-const WATCHED = ['workouts', 'body', 'profile', 'units', 'customExercises', 'splits', 'activeSplitId', 'targets', 'health', 'pendingDeletes', 'pendingBodyDeletes'] as const;
+const WATCHED = [
+  'workouts',
+  'body',
+  'profile',
+  'units',
+  'customExercises',
+  'splits',
+  'activeSplitId',
+  'targets',
+  'health',
+  'pendingDeletes',
+  'pendingBodyDeletes',
+] as const;
 const DELAY_MS = 4000;
 
 let timer: ReturnType<typeof setTimeout> | null = null;

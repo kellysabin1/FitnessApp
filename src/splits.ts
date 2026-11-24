@@ -11,12 +11,26 @@ export function addPlannedExercises(workoutId: string, planned: PlannedExercise[
     const prev = lastPerformance(all, def.name, workoutId);
     const reps = firstReps(p.reps);
     const sets: SetEntry[] = prev?.length
-      ? prev.map((s) => ({ reps: s.reps, weightKg: s.weightKg, seconds: s.seconds, distanceKm: s.distanceKm, warmup: s.warmup, done: false }))
+      ? prev.map((s) => ({
+          reps: s.reps,
+          weightKg: s.weightKg,
+          seconds: s.seconds,
+          distanceKm: s.distanceKm,
+          warmup: s.warmup,
+          done: false,
+        }))
       : Array.from({ length: Math.max(1, Math.min(10, p.sets ?? (def.category === 'cardio' ? 1 : 3))) }, () => ({
           reps: def.kind === 'weighted' || def.kind === 'bodyweight' ? reps : undefined,
           done: false,
         }));
-    return { id: uid(), name: def.name, category: def.category, kind: def.kind, sets, note: p.sets ? `Target ${p.sets} × ${p.reps ?? ''}`.trim() : undefined };
+    return {
+      id: uid(),
+      name: def.name,
+      category: def.category,
+      kind: def.kind,
+      sets,
+      note: p.sets ? `Target ${p.sets} × ${p.reps ?? ''}`.trim() : undefined,
+    };
   });
   useStore.getState().updateWorkout(workoutId, (w) => ({ ...w, exercises: [...w.exercises, ...exs] }));
 }
@@ -83,9 +97,27 @@ export const STARTER_SPLITS: StarterSplit[] = [
     blurb: 'Three balanced sessions. Great for building a habit or getting stronger on limited time.',
     goals: ['consistency', 'build_strength', 'lose_fat'],
     workouts: [
-      w('Full body A', 'Squat + push focus', [ex('Goblet Squat', 3, '8-10'), ex('Dumbbell Bench Press', 3, '8-10'), ex('Romanian Deadlift', 3, '10'), ex('Seated Cable Row', 3, '10-12'), ex('Plank', 3, '30s')]),
-      w('Full body B', 'Hinge + pull focus', [ex('Hip Thrust', 3, '8-10'), ex('Lat Pulldown', 3, '10-12'), ex('Reverse Lunge', 3, '10 each side'), ex('Overhead Press', 3, '8-10'), ex('Dead Bug', 3, '10')]),
-      w('Full body C', 'Single-leg + conditioning', [ex('Bulgarian Split Squat', 3, '8 each side'), ex('Single-Arm Dumbbell Row', 3, '10'), ex('Single-Leg Romanian Deadlift', 3, '8 each side'), ex('Push-Up', 3, '10-15'), ex('Incline Walk', 1, '15 min')]),
+      w('Full body A', 'Squat + push focus', [
+        ex('Goblet Squat', 3, '8-10'),
+        ex('Dumbbell Bench Press', 3, '8-10'),
+        ex('Romanian Deadlift', 3, '10'),
+        ex('Seated Cable Row', 3, '10-12'),
+        ex('Plank', 3, '30s'),
+      ]),
+      w('Full body B', 'Hinge + pull focus', [
+        ex('Hip Thrust', 3, '8-10'),
+        ex('Lat Pulldown', 3, '10-12'),
+        ex('Reverse Lunge', 3, '10 each side'),
+        ex('Overhead Press', 3, '8-10'),
+        ex('Dead Bug', 3, '10'),
+      ]),
+      w('Full body C', 'Single-leg + conditioning', [
+        ex('Bulgarian Split Squat', 3, '8 each side'),
+        ex('Single-Arm Dumbbell Row', 3, '10'),
+        ex('Single-Leg Romanian Deadlift', 3, '8 each side'),
+        ex('Push-Up', 3, '10-15'),
+        ex('Incline Walk', 1, '15 min'),
+      ]),
     ],
   },
   {
@@ -94,10 +126,34 @@ export const STARTER_SPLITS: StarterSplit[] = [
     blurb: 'Two lower and two upper days. A classic for strength and building muscle.',
     goals: ['build_strength', 'grow_glutes', 'recomp'],
     workouts: [
-      w('Lower A', 'Strength: squat pattern', [ex('Barbell Back Squat', 4, '5-6'), ex('Romanian Deadlift', 3, '8'), ex('Single-Leg Leg Press', 3, '10 each side'), ex('Lying Leg Curl', 3, '10-12'), ex('Standing Calf Raise', 3, '12')]),
-      w('Upper A', 'Strength: press + row', [ex('Barbell Bench Press', 4, '5-6'), ex('Seated Cable Row', 3, '8-10'), ex('Overhead Press', 3, '8'), ex('Lat Pulldown', 3, '10'), ex('Bicep Curl', 2, '12')]),
-      w('Lower B', 'Hypertrophy: hinge + glutes', [ex('Hip Thrust', 4, '8-10'), ex('Bulgarian Split Squat', 3, '10 each side'), ex('Leg Extension', 3, '12'), ex('Cable Kickback', 3, '12 each side'), ex('Hanging Knee Raise', 3, '12')]),
-      w('Upper B', 'Hypertrophy: pull + shoulders', [ex('Assisted Pull-Up', 3, '8'), ex('Incline Dumbbell Press', 3, '10'), ex('Single-Arm Cable Row', 3, '12 each side'), ex('Lateral Raise', 3, '15'), ex('Tricep Rope Pushdown', 3, '12')]),
+      w('Lower A', 'Strength: squat pattern', [
+        ex('Barbell Back Squat', 4, '5-6'),
+        ex('Romanian Deadlift', 3, '8'),
+        ex('Single-Leg Leg Press', 3, '10 each side'),
+        ex('Lying Leg Curl', 3, '10-12'),
+        ex('Standing Calf Raise', 3, '12'),
+      ]),
+      w('Upper A', 'Strength: press + row', [
+        ex('Barbell Bench Press', 4, '5-6'),
+        ex('Seated Cable Row', 3, '8-10'),
+        ex('Overhead Press', 3, '8'),
+        ex('Lat Pulldown', 3, '10'),
+        ex('Bicep Curl', 2, '12'),
+      ]),
+      w('Lower B', 'Hypertrophy: hinge + glutes', [
+        ex('Hip Thrust', 4, '8-10'),
+        ex('Bulgarian Split Squat', 3, '10 each side'),
+        ex('Leg Extension', 3, '12'),
+        ex('Cable Kickback', 3, '12 each side'),
+        ex('Hanging Knee Raise', 3, '12'),
+      ]),
+      w('Upper B', 'Hypertrophy: pull + shoulders', [
+        ex('Assisted Pull-Up', 3, '8'),
+        ex('Incline Dumbbell Press', 3, '10'),
+        ex('Single-Arm Cable Row', 3, '12 each side'),
+        ex('Lateral Raise', 3, '15'),
+        ex('Tricep Rope Pushdown', 3, '12'),
+      ]),
     ],
   },
   {
@@ -106,9 +162,27 @@ export const STARTER_SPLITS: StarterSplit[] = [
     blurb: 'Each session trains one movement family. Run it once or twice a week.',
     goals: ['build_strength', 'recomp'],
     workouts: [
-      w('Push', 'Chest, shoulders, triceps', [ex('Barbell Bench Press', 4, '6-8'), ex('Overhead Press', 3, '8'), ex('Incline Dumbbell Press', 3, '10'), ex('Lateral Raise', 3, '15'), ex('Tricep Rope Pushdown', 3, '12')]),
-      w('Pull', 'Back, rear delts, biceps', [ex('Lat Pulldown', 4, '8-10'), ex('Seated Cable Row', 3, '10'), ex('Face Pull', 3, '15'), ex('Hammer Curl', 3, '12'), ex('Rear Delt Fly', 3, '15')]),
-      w('Legs', 'Quads, hamstrings, glutes', [ex('Barbell Back Squat', 4, '6-8'), ex('Romanian Deadlift', 3, '8-10'), ex('Leg Press', 3, '12'), ex('Lying Leg Curl', 3, '12'), ex('Standing Calf Raise', 3, '15')]),
+      w('Push', 'Chest, shoulders, triceps', [
+        ex('Barbell Bench Press', 4, '6-8'),
+        ex('Overhead Press', 3, '8'),
+        ex('Incline Dumbbell Press', 3, '10'),
+        ex('Lateral Raise', 3, '15'),
+        ex('Tricep Rope Pushdown', 3, '12'),
+      ]),
+      w('Pull', 'Back, rear delts, biceps', [
+        ex('Lat Pulldown', 4, '8-10'),
+        ex('Seated Cable Row', 3, '10'),
+        ex('Face Pull', 3, '15'),
+        ex('Hammer Curl', 3, '12'),
+        ex('Rear Delt Fly', 3, '15'),
+      ]),
+      w('Legs', 'Quads, hamstrings, glutes', [
+        ex('Barbell Back Squat', 4, '6-8'),
+        ex('Romanian Deadlift', 3, '8-10'),
+        ex('Leg Press', 3, '12'),
+        ex('Lying Leg Curl', 3, '12'),
+        ex('Standing Calf Raise', 3, '15'),
+      ]),
     ],
   },
   {
@@ -117,10 +191,32 @@ export const STARTER_SPLITS: StarterSplit[] = [
     blurb: 'Two lifting days, one Pilates day, one mobility day. Strong and mobile.',
     goals: ['flexibility', 'build_strength', 'grow_glutes'],
     workouts: [
-      w('Lower body', 'Glutes and legs', [ex('Hip Thrust', 4, '8-10'), ex('Goblet Squat', 3, '10'), ex('Single-Leg Romanian Deadlift', 3, '8 each side'), ex('Hip Abduction Machine', 3, '15')]),
-      w('Mat Pilates', 'Core and control', [ex('The Hundred', 1, '100'), ex('Roll Up', 2, '8'), ex('Single Leg Stretch', 2, '10'), ex('Criss Cross', 2, '10'), ex('Swan', 2, '6')]),
-      w('Upper body', 'Back, shoulders, arms', [ex('Lat Pulldown', 3, '10'), ex('Dumbbell Bench Press', 3, '10'), ex('Single-Arm Shoulder Press', 3, '10 each side'), ex('Face Pull', 3, '15')]),
-      w('Mobility reset', 'Recovery and range of motion', [ex('Cat-Cow', 1, '1 min'), ex('World’s Greatest Stretch', 2, '5 each side'), ex('90/90 Hip Switch', 2, '8'), ex('Pigeon Pose', 2, '45s each side'), ex('Foam Rolling', 1, '5 min')]),
+      w('Lower body', 'Glutes and legs', [
+        ex('Hip Thrust', 4, '8-10'),
+        ex('Goblet Squat', 3, '10'),
+        ex('Single-Leg Romanian Deadlift', 3, '8 each side'),
+        ex('Hip Abduction Machine', 3, '15'),
+      ]),
+      w('Mat Pilates', 'Core and control', [
+        ex('The Hundred', 1, '100'),
+        ex('Roll Up', 2, '8'),
+        ex('Single Leg Stretch', 2, '10'),
+        ex('Criss Cross', 2, '10'),
+        ex('Swan', 2, '6'),
+      ]),
+      w('Upper body', 'Back, shoulders, arms', [
+        ex('Lat Pulldown', 3, '10'),
+        ex('Dumbbell Bench Press', 3, '10'),
+        ex('Single-Arm Shoulder Press', 3, '10 each side'),
+        ex('Face Pull', 3, '15'),
+      ]),
+      w('Mobility reset', 'Recovery and range of motion', [
+        ex('Cat-Cow', 1, '1 min'),
+        ex('World’s Greatest Stretch', 2, '5 each side'),
+        ex('90/90 Hip Switch', 2, '8'),
+        ex('Pigeon Pose', 2, '45s each side'),
+        ex('Foam Rolling', 1, '5 min'),
+      ]),
     ],
   },
   {

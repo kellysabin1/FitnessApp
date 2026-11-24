@@ -5,11 +5,10 @@ import { Body, Button, Card, Eyebrow, Icon, Row, Screen, tap } from '@/src/compo
 import { CATEGORY_LABEL } from '@/src/exercises';
 import { When, WhenPicker } from '@/src/components/WhenPicker';
 import { beats, previousSession, whenLabel, workoutDurationMin } from '@/src/stats';
-import { displayWeight } from '@/src/units';
+import { displayWeight, inputToKg, kgToInput, Units, weightLabel } from '@/src/units';
 import { afterWorkoutSaved } from '@/src/social/after';
 import { SetEntry, useStore, WorkoutExercise } from '@/src/store';
 import { colors, fonts, radius, space } from '@/src/theme';
-import { inputToKg, kgToInput, Units, weightLabel } from '@/src/units';
 
 export default function WorkoutScreen() {
   const { id, logged } = useLocalSearchParams<{ id: string; logged?: string }>();
@@ -42,7 +41,6 @@ export default function WorkoutScreen() {
       router.back();
     };
     if (Platform.OS === 'web') {
-      // eslint-disable-next-line no-alert
       if (confirm('Delete this workout?')) doDelete();
     } else {
       Alert.alert('Delete workout?', 'This can’t be undone.', [
@@ -97,7 +95,9 @@ export default function WorkoutScreen() {
         />
 
         {w.exercises.some((e) => e.category !== 'cardio') && !w.exercises.some((e) => e.sets.some((x) => x.warmup)) ? (
-          <Body muted style={{ fontSize: 12, marginTop: space(3) }}>Tip: tap a set number to mark it as a warm-up.</Body>
+          <Body muted style={{ fontSize: 12, marginTop: space(3) }}>
+            Tip: tap a set number to mark it as a warm-up.
+          </Body>
         ) : null}
         <View style={{ gap: space(4), marginTop: space(4) }}>
           {w.exercises.map((ex) => (
@@ -131,11 +131,16 @@ export default function WorkoutScreen() {
         />
 
         {isDone ? (
-          <Button title={logged ? 'Save workout' : 'Done'} icon="checkmark" style={{ marginTop: space(6) }} onPress={() => {
+          <Button
+            title={logged ? 'Save workout' : 'Done'}
+            icon="checkmark"
+            style={{ marginTop: space(6) }}
+            onPress={() => {
               // logged-after-the-fact workouts get announced to challenges; edits to old ones just sync
               afterWorkoutSaved(w.id, { announce: !!logged });
               router.back();
-            }} />
+            }}
+          />
         ) : null}
 
         {!isDone && !finishing && (
@@ -149,14 +154,19 @@ export default function WorkoutScreen() {
               {[1, 2, 3, 4, 5].map((m) => (
                 <Pressable
                   key={m}
-                  onPress={() => { tap(); setMood(m); }}
+                  onPress={() => {
+                    tap();
+                    setMood(m);
+                  }}
                   style={[styles.mood, mood === m && { backgroundColor: colors.latte, borderColor: colors.latte }]}
                 >
                   <Text style={{ fontFamily: fonts.bodyBold, color: mood === m ? colors.bg : colors.cream }}>{m}</Text>
                 </Pressable>
               ))}
             </Row>
-            <Body muted style={{ fontSize: 12, textAlign: 'center' }}>1 = rough · 5 = unstoppable</Body>
+            <Body muted style={{ fontSize: 12, textAlign: 'center' }}>
+              1 = rough · 5 = unstoppable
+            </Body>
             <Button
               title="Save workout"
               onPress={() => {
@@ -203,7 +213,9 @@ function ExerciseCard({
             <Text style={styles.last} numberOfLines={2}>
               Last time · {new Date(previous.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} ·{' '}
               {previous.sets
-                .map((p) => (ex.kind === 'weighted' && p.weightKg ? `${displayWeight(p.weightKg, units)}×${p.reps ?? '?'}` : `${p.reps ?? '?'} reps`))
+                .map((p) =>
+                  ex.kind === 'weighted' && p.weightKg ? `${displayWeight(p.weightKg, units)}×${p.reps ?? '?'}` : `${p.reps ?? '?'} reps`,
+                )
                 .join('  ')}
             </Text>
           ) : null}
@@ -216,15 +228,24 @@ function ExerciseCard({
       <Row gap={2} style={{ marginTop: space(3), paddingHorizontal: space(1) }}>
         <Text style={[styles.colHead, { width: 28 }]}>SET</Text>
         {cols.map((c) => (
-          <Text key={c.key} style={[styles.colHead, { flex: 1 }]}>{c.label}</Text>
+          <Text key={c.key} style={[styles.colHead, { flex: 1 }]}>
+            {c.label}
+          </Text>
         ))}
         <View style={{ width: 36 }} />
       </Row>
 
       {ex.sets.map((set, i) => (
-        <Row key={i} gap={2} style={[styles.setRow, set.done && { backgroundColor: set.warmup ? 'rgba(169,155,136,0.12)' : 'rgba(95,99,64,0.28)' }]}>
+        <Row
+          key={i}
+          gap={2}
+          style={[styles.setRow, set.done && { backgroundColor: set.warmup ? 'rgba(169,155,136,0.12)' : 'rgba(95,99,64,0.28)' }]}
+        >
           <Pressable
-            onPress={() => { tap(); setSet(i, { warmup: !set.warmup }); }}
+            onPress={() => {
+              tap();
+              setSet(i, { warmup: !set.warmup });
+            }}
             hitSlop={6}
             accessibilityLabel={set.warmup ? 'Warm-up set. Tap to make it a working set' : 'Working set. Tap to mark as warm-up'}
             style={[styles.setNumWrap, set.warmup && styles.warmupBadge]}
@@ -240,10 +261,18 @@ function ExerciseCard({
             })()}
           </Pressable>
           {cols.map((c) => (
-            <NumInput key={c.key} value={c.get(set)} onCommit={(v) => setSet(i, { ...c.set(v), ...(autoDone && v.trim() ? { done: true } : {}) })} placeholder="—" />
+            <NumInput
+              key={c.key}
+              value={c.get(set)}
+              onCommit={(v) => setSet(i, { ...c.set(v), ...(autoDone && v.trim() ? { done: true } : {}) })}
+              placeholder="—"
+            />
           ))}
           <Pressable
-            onPress={() => { tap(); setSet(i, { done: !set.done }); }}
+            onPress={() => {
+              tap();
+              setSet(i, { done: !set.done });
+            }}
             accessibilityLabel={set.done ? 'Set done. Tap to undo' : 'Mark set done'}
             style={[styles.check, set.done && { backgroundColor: colors.olive, borderColor: colors.olive }]}
           >
@@ -284,7 +313,12 @@ function columnsFor(kind: WorkoutExercise['kind'], units: Units, isCardio: boole
     get: (s) => (s.seconds != null ? String(Math.round((s.seconds / 60) * 10) / 10) : ''),
     set: (v) => ({ seconds: toNum(v) != null ? Math.round(toNum(v)! * 60) : undefined }),
   };
-  const secs: Col = { key: 'sec', label: 'SEC', get: (s) => (s.seconds != null ? String(s.seconds) : ''), set: (v) => ({ seconds: toNum(v) }) };
+  const secs: Col = {
+    key: 'sec',
+    label: 'SEC',
+    get: (s) => (s.seconds != null ? String(s.seconds) : ''),
+    set: (v) => ({ seconds: toNum(v) }),
+  };
   const dist: Col = {
     key: 'd',
     label: units === 'us' ? 'MI' : 'KM',
@@ -314,10 +348,12 @@ const toNum = (v: string) => {
 /** Number input that keeps its own text (so "12." doesn't get eaten) and commits on change. */
 function NumInput({ value, onCommit, placeholder }: { value: string; onCommit: (v: string) => void; placeholder?: string }) {
   const [text, setText] = useState(value);
-  useEffect(() => {
+  // follow outside changes (e.g. prefill) without clobbering what's being typed — adjust during render, no effect needed
+  const [seen, setSeen] = useState(value);
+  if (value !== seen) {
+    setSeen(value);
     if (toNum(text) !== toNum(value)) setText(value);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [value]);
+  }
   return (
     <TextInput
       value={text}
@@ -335,7 +371,7 @@ function NumInput({ value, onCommit, placeholder }: { value: string; onCommit: (
 }
 
 function useElapsed(start?: string, end?: string) {
-  const [now, setNow] = useState(Date.now());
+  const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     if (end) return;
     const t = setInterval(() => setNow(Date.now()), 1000);

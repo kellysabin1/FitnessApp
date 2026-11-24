@@ -636,3 +636,62 @@ returns void language sql security definer set search_path = public, pg_catalog 
 $$;
 revoke all on function public.mark_reminded(uuid, date) from public, anon, authenticated;
 grant execute on function public.mark_reminded(uuid, date) to service_role;
+
+-- ───────────────────────── v8: privacy, consent, monitoring ─────────────────────────
+
+-- Consent log (REP-6): one row each time someone agrees to something. Append-only: people can add and read
+-- their own rows, nobody can edit or delete them (they go away only with the account).
+create table if not exists public.consents (
+  id bigserial primary key,
+  user_id uuid not null references public.profiles (id) on delete cascade,
+  kind text not null check (kind in ('terms_privacy', 'health_data', 'ai_coach', 'challenge_sharing')),
+  version integer not null check (version > 0),
+  granted boolean not null default true,              -- false = consent withdrawn (latest row per kind wins)
+  context text check (char_length(context) <= 100),   -- e.g. which challenge
+  at timestamptz not null default now()
+);
+create index if not exists consents_user on public.consents (user_id, kind);
+alter table public.consents enable row level security;
+drop policy if exists "see own consents" on public.consents;
+create policy "see own consents" on public.consents for select to authenticated using (user_id = auth.uid());
+drop policy if exists "record own consent" on public.consents;
+create policy "record own consent" on public.consents for insert to authenticated
+  with check (user_id = auth.uid() and at between now() - interval '1 minute' and now() + interval '1 minute');
+revoke update, delete on public.consents from authenticated, anon;
+
+-- Profiles are readable by everyone signed in (needed to find friends by @username) — but only the public
+-- parts. Who has AI coach access is nobody else's business.
+revoke select on public.profiles from anon, authenticated;
+grant select (id, username, display_name, created_at) on public.profiles to authenticated;
+
+-- Error & uptime log (REP-11). Server-only (RLS on, no policies). The server scrubs personal data before
+-- writing: no emails, no tokens, no numbers from messages, no user ids.
+create table if not exists public.error_events (
+  id bigserial primary key,
+  at timestamptz not null default now(),
+  source text not null check (source in ('app', 'server', 'uptime')),
+  kind text not null check (char_length(kind) <= 60),
+  message text not null check (char_length(message) <= 500),
+  detail text check (char_length(detail) <= 4000),
+  route text check (char_length(route) <= 200),
+  release text check (char_length(release) <= 40)
+);
+create index if not exists error_events_at on public.error_events (at desc);
+alter table public.error_events enable row level security;
+
+-- Uptime: the database pings rep-coach every 5 minutes (see jobs.sql) and records failures here.
+create table if not exists public.uptime_pings (
+  request_id bigint primary key,
+  at timestamptz not null default now(),
+  checked boolean not null default false
+);
+alter table public.uptime_pings enable row level security;
+
+-- Account deletion (REP-5): the server calls this, then deletes the login (auth user), which cascades to
+-- every table above. This removes the one thing that doesn't cascade: nudges that name them as recipient.
+create or replace function public.delete_account_data(p_user uuid)
+returns void language sql security definer set search_path = public, pg_catalog as $$
+  delete from activity where payload ->> 'to' = p_user::text;
+$$;
+revoke all on function public.delete_account_data(uuid) from public, anon, authenticated;
+grant execute on function public.delete_account_data(uuid) to service_role;

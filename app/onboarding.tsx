@@ -1,4 +1,4 @@
-import { Redirect, router } from 'expo-router';
+import { Redirect } from 'expo-router';
 import { socialEnabled } from '@/src/config';
 import { finishSetup } from '@/src/social/invite';
 import { useState } from 'react';
@@ -31,12 +31,7 @@ export default function Onboarding() {
   const toggleGoal = (g: Goal) => setGoals((cur) => (cur.includes(g) ? cur.filter((x) => x !== g) : [...cur, g]));
 
   const finish = () => {
-    const heightCm =
-      units === 'us'
-        ? ft
-          ? ftInToCm(parseInt(ft) || 0, parseInt(inch) || 0)
-          : undefined
-        : parseFloat(cm) || undefined;
+    const heightCm = units === 'us' ? (ft ? ftInToCm(parseInt(ft) || 0, parseInt(inch) || 0) : undefined) : parseFloat(cm) || undefined;
     s.set({ units });
     s.updateProfile({
       name: name.trim(),
@@ -65,10 +60,7 @@ export default function Onboarding() {
       <Screen contentStyle={{ paddingBottom: space(10) }}>
         <Row gap={1.5} style={{ marginBottom: space(10) }}>
           {Array.from({ length: STEPS }).map((_, i) => (
-            <View
-              key={i}
-              style={{ flex: 1, height: 3, borderRadius: 2, backgroundColor: i <= step ? colors.latte : colors.line }}
-            />
+            <View key={i} style={{ flex: 1, height: 3, borderRadius: 2, backgroundColor: i <= step ? colors.latte : colors.line }} />
           ))}
         </Row>
 
@@ -114,17 +106,53 @@ export default function Onboarding() {
             </Row>
             {units === 'us' ? (
               <Row>
-                <Field style={{ flex: 1 }} label="Height" value={ft} onChangeText={setFt} keyboardType="number-pad" placeholder="5" suffix="ft" />
-                <Field style={{ flex: 1 }} label=" " value={inch} onChangeText={setInch} keyboardType="number-pad" placeholder="5" suffix="in" />
+                <Field
+                  style={{ flex: 1 }}
+                  label="Height"
+                  value={ft}
+                  onChangeText={setFt}
+                  keyboardType="number-pad"
+                  placeholder="5"
+                  suffix="ft"
+                />
+                <Field
+                  style={{ flex: 1 }}
+                  label=" "
+                  value={inch}
+                  onChangeText={setInch}
+                  keyboardType="number-pad"
+                  placeholder="5"
+                  suffix="in"
+                />
               </Row>
             ) : (
               <Field label="Height" value={cm} onChangeText={setCm} keyboardType="decimal-pad" placeholder="165" suffix="cm" />
             )}
             <Row>
-              <Field style={{ flex: 1 }} label="Current weight" value={weight} onChangeText={setWeight} keyboardType="decimal-pad" suffix={weightLabel(units)} />
-              <Field style={{ flex: 1 }} label="Goal weight" value={goalWeight} onChangeText={setGoalWeight} keyboardType="decimal-pad" suffix={weightLabel(units)} />
+              <Field
+                style={{ flex: 1 }}
+                label="Current weight"
+                value={weight}
+                onChangeText={setWeight}
+                keyboardType="decimal-pad"
+                suffix={weightLabel(units)}
+              />
+              <Field
+                style={{ flex: 1 }}
+                label="Goal weight"
+                value={goalWeight}
+                onChangeText={setGoalWeight}
+                keyboardType="decimal-pad"
+                suffix={weightLabel(units)}
+              />
             </Row>
-            <Field label="Birth year (optional)" value={birthYear} onChangeText={setBirthYear} keyboardType="number-pad" placeholder="1998" />
+            <Field
+              label="Birth year (optional)"
+              value={birthYear}
+              onChangeText={setBirthYear}
+              keyboardType="number-pad"
+              placeholder="1998"
+            />
           </View>
         )}
 
@@ -143,13 +171,28 @@ export default function Onboarding() {
             <Text style={label}>Days per week</Text>
             <Row gap={2}>
               {[2, 3, 4, 5, 6].map((d) => (
-                <Pressable key={d} onPress={() => setDays(d)} style={[dayDot, days === d && { backgroundColor: colors.burgundy, borderColor: 'rgba(216,193,166,0.45)' }]}>
+                <Pressable
+                  key={d}
+                  onPress={() => setDays(d)}
+                  style={[dayDot, days === d && { backgroundColor: colors.burgundy, borderColor: 'rgba(216,193,166,0.45)' }]}
+                >
                   <Text style={{ color: colors.cream, fontFamily: fonts.bodyMedium }}>{d}</Text>
                 </Pressable>
               ))}
             </Row>
-            <Field label="Equipment you have" value={equipment} onChangeText={setEquipment} placeholder="Full gym, reformer, home dumbbells…" />
-            <Field label="Injuries or preferences" value={notes} onChangeText={setNotes} placeholder="e.g. sensitive knees, love hip thrusts, hate burpees" multiline />
+            <Field
+              label="Equipment you have"
+              value={equipment}
+              onChangeText={setEquipment}
+              placeholder="Full gym, reformer, home dumbbells…"
+            />
+            <Field
+              label="Injuries or preferences"
+              value={notes}
+              onChangeText={setNotes}
+              placeholder="e.g. sensitive knees, love hip thrusts, hate burpees"
+              multiline
+            />
           </View>
         )}
 

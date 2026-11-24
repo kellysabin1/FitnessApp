@@ -2,7 +2,7 @@
 // Holds the secrets the phone app must never contain: your Anthropic API key, the Supabase
 // service key and your Oura client secret.
 // Coach access: a signed-in rep. user whose profile has coach_enabled = true (per-person, revocable).
-// Legacy: the shared APP_TOKEN still works while ALLOW_APP_TOKEN isn't "false" (being retired).
+// Legacy: the shared APP_TOKEN works only if ALLOW_APP_TOKEN=true (retired — accounts are required now).
 import Anthropic from '@anthropic-ai/sdk';
 import { betaZodOutputFormat } from '@anthropic-ai/sdk/helpers/beta/zod';
 import express, { type NextFunction, type Request, type Response } from 'express';
@@ -10,12 +10,19 @@ import { timingSafeEqual } from 'node:crypto';
 import { z } from 'zod';
 import { mountPushRoutes } from './push.js';
 import { mountReminderRoutes } from './reminders.js';
+import { mountMonitoringRoutes, recordError, watchProcess } from './monitoring.js';
+import { mountAccountRoutes } from './account.js';
 import { ipRateLimit, LIMITS, sendDailyLimit, takeLegacyQuota, takeUserQuota, type CoachKind } from './limits.js';
 import { db, supabaseConfigured, userFromRequest } from './supabase.js';
 
 const PORT = Number(process.env.PORT ?? 8787);
 const APP_TOKEN = process.env.APP_TOKEN ?? '';
-const ALLOW_APP_TOKEN = !!APP_TOKEN && process.env.ALLOW_APP_TOKEN !== 'false';
+const APP_URL_FOR_CORS = (process.env.APP_URL ?? '').trim();
+// The old shared coach password has no person behind it (no consent, no per-person limits), so it's off
+// unless explicitly re-enabled with ALLOW_APP_TOKEN=true.
+const ALLOW_APP_TOKEN = !!APP_TOKEN && process.env.ALLOW_APP_TOKEN === 'true';
+/** Bump when the AI-coach consent wording changes materially; people are asked again. Keep in step with src/consent.ts. */
+const AI_CONSENT_VERSION = 1;
 const MODEL = process.env.COACH_MODEL ?? 'claude-opus-5-5';
 const OURA_CLIENT_ID = process.env.OURA_CLIENT_ID ?? '';
 const OURA_CLIENT_SECRET = process.env.OURA_CLIENT_SECRET ?? '';
@@ -28,13 +35,33 @@ if (!ALLOW_APP_TOKEN && !supabaseConfigured()) {
 const client = new Anthropic(); // reads ANTHROPIC_API_KEY
 const app = express();
 app.set('trust proxy', 1); // Render sits in front of us; use the real client IP for rate limits
+app.disable('x-powered-by');
 app.use(express.json({ limit: '1mb' }));
 
-// Allow the web preview (Expo web) to call us. The bearer token is the real gate.
+// CORS: only the rep. web app (APP_URL, plus ALLOWED_ORIGINS if set) and local development may call
+// this server from a browser. Requests without an Origin (the reminder job, curl) aren't affected —
+// the login token is still the real gate; this just stops other websites from using a visitor's session.
+const ALLOWED_ORIGINS = new Set(
+  [APP_URL_FOR_CORS, ...(process.env.ALLOWED_ORIGINS ?? '').split(',')].map((o) => o.trim().replace(/\/$/, '')).filter(Boolean),
+);
+const isLocalDev = (o: string) => /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(o);
+// rep.'s own Render static site, whatever suffix Render gave it — so a missing/mistyped APP_URL can't lock the app out
+const isRepApp = (o: string) => /^https:\/\/rep-app(-[a-z0-9]+)?\.onrender\.com$/.test(o);
+console.log(`CORS: allowing ${[...ALLOWED_ORIGINS, 'rep-app*.onrender.com', 'localhost'].join(', ')}`);
+
 app.use((req, res, next) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Cache-Control', 'no-store'); // responses can contain personal data
+  res.setHeader('Vary', 'Origin');
+  const origin = req.headers.origin;
+  if (origin) {
+    const ok = ALLOWED_ORIGINS.has(origin) || isRepApp(origin) || isLocalDev(origin);
+    if (!ok) return void res.status(403).json({ error: 'Origin not allowed' });
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
+    res.setHeader('Access-Control-Max-Age', '600');
+  }
   if (req.method === 'OPTIONS') return void res.sendStatus(204);
   next();
 });
@@ -48,6 +75,9 @@ app.get('/health', (_req, res) => {
 // Friend notifications use the person's rep. login instead of the coach password.
 mountPushRoutes(app);
 mountReminderRoutes(app);
+mountMonitoringRoutes(app);
+mountAccountRoutes(app);
+watchProcess();
 
 // ---------------- Who is calling? ----------------
 
@@ -78,6 +108,21 @@ async function requireCoach(req: Request, res: Response, next: NextFunction) {
   const { data } = await db().from('profiles').select('coach_enabled').eq('id', user.id).maybeSingle();
   if (!data?.coach_enabled) {
     return void res.status(403).json({ error: 'Your account doesn’t have coach access yet.', code: 'no_access' });
+  }
+  // The person must have agreed (in the app) to their data being sent to Anthropic — checked here too,
+  // not just in the app. Latest answer wins, so withdrawing consent switches the coach off.
+  const { data: consent } = await db()
+    .from('consents')
+    .select('granted, version')
+    .eq('user_id', user.id)
+    .eq('kind', 'ai_coach')
+    .order('at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (!consent?.granted || consent.version < AI_CONSENT_VERSION) {
+    return void res
+      .status(403)
+      .json({ error: 'Allow the AI coach first — open the Coach tab to see what it uses.', code: 'needs_consent' });
   }
   res.locals.caller = { kind: 'user', userId: user.id } satisfies Caller;
   next();
@@ -202,7 +247,9 @@ const SuggestedTarget = z.object({
   kind: z.enum(['bodyweight', 'lift', 'run', 'steps', 'workouts', 'measurement', 'custom']),
   title: z.string().describe('Short, specific, e.g. "Lose 4 lb" or "Hip thrust 225 lb".'),
   exercise: z.string().nullable().describe('For lift targets: the exercise name; otherwise null.'),
-  target_value: z.number().describe('Target in the user’s units: lb or kg for weight/lifts, seconds for run times, steps/day, workouts/week.'),
+  target_value: z
+    .number()
+    .describe('Target in the user’s units: lb or kg for weight/lifts, seconds for run times, steps/day, workouts/week.'),
   weeks: z.number().int().describe('Realistic timeframe in weeks.'),
   why: z.string().describe('One sentence: why this target fits their goals and data.'),
 });
@@ -223,30 +270,32 @@ const Plan = z.object({
   recovery: z.string().describe('1–2 sentences of recovery guidance based on sleep/HRV/readiness.'),
   suggestedTargets: z
     .array(SuggestedTarget)
-    .describe('If the client has NO active targets: 1–2 suggested measurable targets that fit their goals. If they already have targets: empty array.'),
+    .describe(
+      'If the client has NO active targets: 1–2 suggested measurable targets that fit their goals. If they already have targets: empty array.',
+    ),
 });
 
 const SplitOut = z.object({
   name: z.string().describe('Name of the split, e.g. "4-day upper / lower".'),
-  notes: z.string().describe('2–3 sentences: how to run it (rolling order — if a day is missed, just do the next workout), progression, and rest.'),
+  notes: z
+    .string()
+    .describe('2–3 sentences: how to run it (rolling order — if a day is missed, just do the next workout), progression, and rest.'),
   workouts: z.array(SplitWorkoutOut).describe('The workouts in the order to do them. One per training day per week.'),
 });
 
 const TargetPlanOut = z.object({
-  summary: z.string().describe('2–3 sentences: the approach and whether the target and timeframe are realistic (say so plainly if not, and suggest an adjustment).'),
+  summary: z
+    .string()
+    .describe(
+      '2–3 sentences: the approach and whether the target and timeframe are realistic (say so plainly if not, and suggest an adjustment).',
+    ),
   weekly: z.array(z.string()).describe('One short line per week of the timeframe (max 12) describing that week’s focus/milestone.'),
   actions: z.array(z.string()).describe('3–6 concrete daily/weekly actions (training, steps, nutrition basics, sleep).'),
   stepGoal: z.number().int().nullable().describe('A daily step goal if relevant, else null.'),
   workouts: z.array(SplitWorkoutOut).describe('0–4 workouts that directly serve this target (empty if not training-related).'),
 });
 
-async function structured<T extends z.ZodType>(
-  res: Response,
-  schema: T,
-  context: string,
-  instruction: string,
-  failMsg: string,
-) {
+async function structured<T extends z.ZodType>(res: Response, schema: T, context: string, instruction: string, failMsg: string) {
   const response = await client.beta.messages.parse({
     model: MODEL,
     max_tokens: 16000,
@@ -344,9 +393,14 @@ function handleError(e: unknown, res: Response) {
   }
   if (e instanceof Anthropic.APIError) {
     console.error(`Claude API error ${e.status}:`, e.message);
+    void recordError('server', `ClaudeAPIError${e.status ?? ''}`, e.message, { route: res.req?.path });
     return void res.status(502).json({ error: 'Coach is temporarily unavailable.' });
   }
   console.error(e);
+  void recordError('server', (e as Error)?.name ?? 'Error', String((e as Error)?.message ?? e), {
+    stack: (e as Error)?.stack,
+    route: res.req?.path,
+  });
   res.status(500).json({ error: 'Something went wrong on the coach server.' });
 }
 

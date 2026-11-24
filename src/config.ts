@@ -15,3 +15,4 @@ export const APP_URL = process.env.EXPO_PUBLIC_APP_URL ?? '';
  * Built into the app so friends get notifications even without the coach password.
  */
 export const PUSH_SERVER_URL = process.env.EXPO_PUBLIC_PUSH_SERVER_URL || 'https://rep-coach.onrender.com';
+export const PRIVACY_CONTACT = process.env.EXPO_PUBLIC_PRIVACY_CONTACT ?? '';

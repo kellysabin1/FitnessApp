@@ -4,11 +4,12 @@ import {
   CormorantGaramond_700Bold,
 } from '@expo-google-fonts/cormorant-garamond';
 import { DMSans_400Regular, DMSans_500Medium, DMSans_700Bold } from '@expo-google-fonts/dm-sans';
-import { DarkTheme, Stack, ThemeProvider } from 'expo-router';
+import { DarkTheme, ErrorBoundary as RouterErrorBoundary, type ErrorBoundaryProps, Stack, ThemeProvider } from 'expo-router';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
+import { reportError, watchGlobalErrors } from '@/src/errors';
 import { useStore } from '@/src/store';
 import { restoreSession } from '@/src/social/api';
 import { registerServiceWorker } from '@/src/social/push';
@@ -16,7 +17,11 @@ import { ensureReminders } from '@/src/social/reminders';
 import { startAutoSync } from '@/src/social/autosync';
 import { colors, fonts } from '@/src/theme';
 
-export { ErrorBoundary } from 'expo-router';
+/** Expo Router's error screen, plus a scrubbed crash report so we hear about it. */
+export function ErrorBoundary(props: ErrorBoundaryProps) {
+  useEffect(() => reportError(props.error), [props.error]);
+  return <RouterErrorBoundary {...props} />;
+}
 
 SplashScreen.preventAutoHideAsync();
 
@@ -49,6 +54,7 @@ export default function RootLayout() {
       .then(() => ensureReminders())
       .catch(() => {});
     registerServiceWorker();
+    watchGlobalErrors();
     startAutoSync();
   }, [hydrated]);
 
@@ -83,7 +89,11 @@ export default function RootLayout() {
         <Stack.Screen name="split-new" options={{ presentation: 'modal', title: 'New split' }} />
         <Stack.Screen name="target/[id]" options={{ title: '' }} />
         <Stack.Screen name="target-new" options={{ presentation: 'modal', title: 'New target' }} />
-        <Stack.Screen name="reminders" options={{ presentation: "modal", title: "Reminders" }} />
+        <Stack.Screen name="reminders" options={{ presentation: 'modal', title: 'Reminders' }} />
+        <Stack.Screen name="privacy" options={{ presentation: 'modal', title: 'Privacy Policy' }} />
+        <Stack.Screen name="terms" options={{ presentation: 'modal', title: 'Terms of Use' }} />
+        <Stack.Screen name="your-data" options={{ presentation: 'modal', title: 'Privacy & your data' }} />
+        <Stack.Screen name="consent" options={{ headerShown: false, gestureEnabled: false }} />
         <Stack.Screen name="join/[code]" options={{ headerShown: false }} />
       </Stack>
     </ThemeProvider>

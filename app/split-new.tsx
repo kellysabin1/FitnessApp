@@ -46,9 +46,24 @@ export default function NewSplit() {
     return (
       <Screen padTop={false} contentStyle={{ gap: space(3) }}>
         <Body muted>A split is a set of workouts you rotate through in order. Miss a day and the next one simply waits.</Body>
-        <Option icon="sparkles-outline" title="Let your coach build it" text="Designed around your goals, experience, equipment and targets." onPress={() => setMode('ai')} />
-        <Option icon="albums-outline" title="Start from a ready-made split" text="Proven layouts you can edit afterwards." onPress={() => setMode('starter')} />
-        <Option icon="create-outline" title="Build your own" text="Name it and add the workouts you already do each week." onPress={() => setMode('own')} />
+        <Option
+          icon="sparkles-outline"
+          title="Let your coach build it"
+          text="Designed around your goals, experience, equipment and targets."
+          onPress={() => setMode('ai')}
+        />
+        <Option
+          icon="albums-outline"
+          title="Start from a ready-made split"
+          text="Proven layouts you can edit afterwards."
+          onPress={() => setMode('starter')}
+        />
+        <Option
+          icon="create-outline"
+          title="Build your own"
+          text="Name it and add the workouts you already do each week."
+          onPress={() => setMode('own')}
+        />
       </Screen>
     );
   }
@@ -57,7 +72,9 @@ export default function NewSplit() {
     return (
       <Screen padTop={false} contentStyle={{ gap: space(5) }}>
         <Field label="Split name" value={name} onChangeText={setName} placeholder="e.g. My 5-day split" autoFocus />
-        <Body muted style={{ fontSize: 13 }}>Next you’ll add each workout and its exercises.</Body>
+        <Body muted style={{ fontSize: 13 }}>
+          Next you’ll add each workout and its exercises.
+        </Body>
         <Button
           title="Create split"
           disabled={!name.trim()}
@@ -79,8 +96,12 @@ export default function NewSplit() {
             <Card key={st.name} style={{ gap: space(2) }}>
               {rec ? <Eyebrow color={colors.latte}>Recommended for your goals</Eyebrow> : null}
               <H2 style={{ fontSize: 21 }}>{st.name}</H2>
-              <Body muted style={{ fontSize: 13 }}>{st.blurb}</Body>
-              <Body muted style={{ fontSize: 12 }}>{st.workouts.map((w) => w.title).join(' → ')}</Body>
+              <Body muted style={{ fontSize: 13 }}>
+                {st.blurb}
+              </Body>
+              <Body muted style={{ fontSize: 12 }}>
+                {st.workouts.map((w) => w.title).join(' → ')}
+              </Body>
               <Button small title="Use this split" onPress={() => keep(makeSplitFromStarter(st), true)} style={{ marginTop: space(1) }} />
             </Card>
           );
@@ -107,27 +128,46 @@ export default function NewSplit() {
         placeholder="e.g. 45 minutes max, one Pilates day, no barbell squats"
         multiline
       />
-      <Button title={draft ? 'Try again' : 'Build my split'} icon="sparkles" loading={busy} onPress={generate} variant={draft ? 'secondary' : 'primary'} />
+      <Button
+        title={draft ? 'Try again' : 'Build my split'}
+        icon="sparkles"
+        loading={busy}
+        onPress={generate}
+        variant={draft ? 'secondary' : 'primary'}
+      />
       {busy ? (
         <Row gap={2}>
           <ActivityIndicator color={colors.latte} />
-          <Body muted style={{ fontSize: 13 }}>Designing your split — this can take up to a minute.</Body>
+          <Body muted style={{ fontSize: 13 }}>
+            Designing your split — this can take up to a minute.
+          </Body>
         </Row>
       ) : null}
       {err ? <Body style={{ color: colors.sand, fontSize: 14 }}>{err}</Body> : null}
       {draft ? (
         <View style={{ gap: space(3) }}>
           <H2>{draft.name}</H2>
-          {draft.notes ? <Body muted style={{ fontSize: 14 }}>{draft.notes}</Body> : null}
+          {draft.notes ? (
+            <Body muted style={{ fontSize: 14 }}>
+              {draft.notes}
+            </Body>
+          ) : null}
           {draft.workouts.map((w, i) => (
             <Card key={w.id} style={{ padding: space(4) }}>
               <Text style={{ fontFamily: fonts.display, fontSize: 20, color: colors.cream }}>
                 {i + 1}. {w.title}
               </Text>
-              {w.focus ? <Body muted style={{ fontSize: 13 }}>{w.focus}</Body> : null}
+              {w.focus ? (
+                <Body muted style={{ fontSize: 13 }}>
+                  {w.focus}
+                </Body>
+              ) : null}
               {w.exercises.map((e, k) => (
                 <Text key={k} style={{ fontFamily: fonts.body, fontSize: 13, color: colors.textMuted, marginTop: 2 }}>
-                  {e.name} <Text style={{ color: colors.textFaint }}>{e.sets} × {e.reps}</Text>
+                  {e.name}{' '}
+                  <Text style={{ color: colors.textFaint }}>
+                    {e.sets} × {e.reps}
+                  </Text>
                 </Text>
               ))}
             </Card>
@@ -144,7 +184,15 @@ function Option({ icon, title, text, onPress }: { icon: IconName; title: string;
   return (
     <Pressable
       onPress={onPress}
-      style={{ flexDirection: 'row', gap: space(3), padding: space(4), borderRadius: radius.lg, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.card }}
+      style={{
+        flexDirection: 'row',
+        gap: space(3),
+        padding: space(4),
+        borderRadius: radius.lg,
+        borderWidth: 1,
+        borderColor: colors.line,
+        backgroundColor: colors.card,
+      }}
     >
       <Icon name={icon} size={22} color={colors.latte} />
       <View style={{ flex: 1 }}>

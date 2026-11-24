@@ -11,7 +11,17 @@ export function ProgressBar({ progress, expected }: { progress: number; expected
     <View style={{ height: 8, borderRadius: radius.pill, backgroundColor: colors.bgRaised, overflow: 'visible', marginTop: space(3) }}>
       <View style={{ width: `${Math.round(progress * 100)}%`, height: 8, borderRadius: radius.pill, backgroundColor: colors.latte }} />
       {expected != null && expected > 0 && expected < 1 ? (
-        <View style={{ position: 'absolute', left: `${Math.round(expected * 100)}%`, top: -3, width: 2, height: 14, backgroundColor: colors.sand, borderRadius: 1 }} />
+        <View
+          style={{
+            position: 'absolute',
+            left: `${Math.round(expected * 100)}%`,
+            top: -3,
+            width: 2,
+            height: 14,
+            backgroundColor: colors.sand,
+            borderRadius: 1,
+          }}
+        />
       ) : null}
     </View>
   );
@@ -24,7 +34,15 @@ export function StatusPill({ t }: { t: Target }) {
   const health = useStore((s) => s.health);
   const st = targetStatus(t, { workouts, body, health });
   const label =
-    t.status === 'done' ? 'Done ✓' : st.reached ? 'Reached ✓' : st.current == null ? 'Needs a check-in' : st.onTrack ? 'On track' : 'Behind pace';
+    t.status === 'done'
+      ? 'Done ✓'
+      : st.reached
+        ? 'Reached ✓'
+        : st.current == null
+          ? 'Needs a check-in'
+          : st.onTrack
+            ? 'On track'
+            : 'Behind pace';
   const good = t.status === 'done' || st.reached || st.onTrack;
   return (
     <View
@@ -62,7 +80,11 @@ export function TargetCard({ t }: { t: Target }) {
           {unit && st.current != null ? ` ${unit}` : ''} · {Math.round(st.progress * 100)}%
         </Text>
         <Text style={{ fontFamily: fonts.body, fontSize: 12, color: colors.textMuted }}>
-          {t.status === 'active' ? `${st.daysLeft} day${st.daysLeft === 1 ? '' : 's'} left` : t.status === 'done' ? 'Completed' : 'Archived'}
+          {t.status === 'active'
+            ? `${st.daysLeft} day${st.daysLeft === 1 ? '' : 's'} left`
+            : t.status === 'done'
+              ? 'Completed'
+              : 'Archived'}
         </Text>
       </Row>
     </Card>

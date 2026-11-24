@@ -26,7 +26,7 @@ export default function ExercisePicker() {
   const [cat, setCat] = useState<Filter>('all');
   const [picked, setPicked] = useState<string[]>([]);
 
-  const library = useMemo(() => allExercises(), [custom]);
+  const library = useMemo(() => allExercises(custom), [custom]);
 
   const recent = useMemo(() => {
     const names: string[] = [];

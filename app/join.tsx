@@ -26,12 +26,23 @@ export default function JoinWithCode() {
       <Body muted>Type the 6-character code your friend sent you.</Body>
       <Field
         value={code}
-        onChangeText={(t) => setCode(t.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6))}
+        onChangeText={(t) =>
+          setCode(
+            t
+              .toUpperCase()
+              .replace(/[^A-Z0-9]/g, '')
+              .slice(0, 6),
+          )
+        }
         placeholder="A1B2C3"
         autoCapitalize="characters"
         autoCorrect={false}
         autoFocus
       />
+      <Body muted style={{ fontSize: 13 }}>
+        Members will see your workouts (exercises, sets, weights, reps) and daily steps from the challenge dates only — never your body
+        measurements. Leave any time.
+      </Body>
       <Button title="Join challenge" loading={busy} disabled={code.length !== 6} onPress={join} />
       {err ? <Body style={{ color: colors.sand, fontSize: 14 }}>{err}</Body> : null}
     </Screen>

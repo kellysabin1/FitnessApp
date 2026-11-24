@@ -4,6 +4,7 @@ import { setsDone, workoutDurationMin, workoutVolumeKg } from '../stats';
 import { healthForDate, todayKey, useStore, type Workout } from '../store';
 import { friendly, requireSb, sb } from './supabase';
 import { ensureReminders } from './reminders';
+import { flushPendingConsents, pullConsents, recordConsent } from '../consent';
 
 export interface Profile {
   id: string;
@@ -17,7 +18,9 @@ export async function signUp(email: string, password: string) {
   const { data, error } = await requireSb().auth.signUp({ email: email.trim(), password });
   if (error) throw new Error(friendly(error));
   if (!data.session) {
-    throw new Error('Check your email to confirm your account, then sign in. (Tip: turn off "Confirm email" in Supabase for instant sign-up.)');
+    throw new Error(
+      'Check your email to confirm your account, then sign in. (Tip: turn off "Confirm email" in Supabase for instant sign-up.)',
+    );
   }
   await onSignedIn(data.session);
 }
@@ -65,12 +68,15 @@ async function onSignedIn(session: Session) {
     useStore.setState({ account: { userId, email: session.user.email ?? '', username: p.username, displayName: p.display_name } });
   }
   await syncUp().catch(() => {});
-  if (p) void ensureReminders();
+  if (p) {
+    await flushPendingConsents();
+    void ensureReminders();
+  }
 }
 
 /** Bring this phone up to date with the account (new phone, reinstall, or edits on another device). */
 export async function pullAll() {
-  await Promise.all([pullUserData(), pullBody(), pullWorkouts()]);
+  await Promise.all([pullUserData(), pullBody(), pullWorkouts(), pullConsents()]);
 }
 
 /** On app start: restore the account from a saved session (or clear it if the session is gone). */
@@ -116,13 +122,12 @@ export async function saveProfile(username: string, displayName: string) {
   if (!acct) throw new Error('Sign in first.');
   const u = username.trim().toLowerCase().replace(/^@/, '');
   if (!USERNAME_RE.test(u)) throw new Error('Usernames are 3–20 lowercase letters, numbers or _.');
-  const { error } = await c
-    .from('profiles')
-    .upsert({ id: acct.userId, username: u, display_name: displayName.trim().slice(0, 40) });
+  const { error } = await c.from('profiles').upsert({ id: acct.userId, username: u, display_name: displayName.trim().slice(0, 40) });
   if (error) throw new Error(friendly(error));
   useStore.setState({ account: { ...acct, username: u, displayName: displayName.trim() } });
   // Account setup finished: back up everything already on this phone right away.
   await syncUp().catch(() => {});
+  await flushPendingConsents();
   void ensureReminders();
 }
 
@@ -209,7 +214,8 @@ export async function syncUp() {
     const day = todayKey(d);
     const v = healthForDate(s.health, day).steps;
     if (v != null) {
-      const src = s.health[`apple_health:${day}`]?.steps != null ? 'apple_health' : s.health[`oura:${day}`]?.steps != null ? 'oura' : 'manual';
+      const src =
+        s.health[`apple_health:${day}`]?.steps != null ? 'apple_health' : s.health[`oura:${day}`]?.steps != null ? 'oura' : 'manual';
       steps.push({ user_id: s.account.userId, day, steps: Math.min(200000, Math.round(v)), source: src });
     }
   }
@@ -357,11 +363,7 @@ export async function sendFriendRequest(userId: string) {
 
 export async function acceptFriend(requester: string) {
   const me = useStore.getState().account!.userId;
-  const { error } = await requireSb()
-    .from('friendships')
-    .update({ status: 'accepted' })
-    .eq('requester', requester)
-    .eq('addressee', me);
+  const { error } = await requireSb().from('friendships').update({ status: 'accepted' }).eq('requester', requester).eq('addressee', me);
   if (error) throw new Error(friendly(error));
 }
 
@@ -462,6 +464,7 @@ export async function createChallenge(input: {
   description?: string;
   tasks?: string[];
 }): Promise<Challenge> {
+  await recordConsent('challenge_sharing', true, 'create');
   await syncUp().catch(() => {});
   const { data, error } = await requireSb().rpc('create_challenge', {
     p_name: input.name.trim(),
@@ -475,13 +478,18 @@ export async function createChallenge(input: {
     p_plan: input.plan,
     p_mode: input.mode,
     p_description: input.description?.trim() || null,
-    p_tasks: (input.tasks ?? []).map((t) => t.trim()).filter(Boolean).slice(0, 3),
+    p_tasks: (input.tasks ?? [])
+      .map((t) => t.trim())
+      .filter(Boolean)
+      .slice(0, 3),
   });
   if (error) throw new Error(friendly(error));
   return data as Challenge;
 }
 
 export async function joinChallenge(code: string): Promise<string> {
+  // joining is agreeing to share challenge-day workouts and steps with its members (the screen says so)
+  await recordConsent('challenge_sharing', true, `join:${code.trim().toUpperCase()}`);
   await syncUp().catch(() => {});
   const { data, error } = await requireSb().rpc('join_challenge', { p_code: code.trim() });
   if (error) throw new Error(friendly(error));
@@ -516,7 +524,9 @@ export async function leaderboard(challengeId: string): Promise<LeaderRow[]> {
 export async function feed(challengeId: string): Promise<FeedItem[]> {
   const { data, error } = await requireSb()
     .from('activity')
-    .select('id, user_id, kind, payload, created_at, who:profiles!activity_user_id_fkey(id, username, display_name), reactions(user_id, emoji)')
+    .select(
+      'id, user_id, kind, payload, created_at, who:profiles!activity_user_id_fkey(id, username, display_name), reactions(user_id, emoji)',
+    )
     .eq('challenge_id', challengeId)
     .order('created_at', { ascending: false })
     .limit(50);
@@ -556,9 +566,7 @@ export async function shareFinishedWorkout(w: Workout): Promise<number[]> {
   if (!c || !acct?.username || !w.finishedAt) return [];
   await syncUp();
   const day = todayKey(new Date(w.startedAt));
-  const running = (await myChallenges()).filter(
-    (ch) => ch.starts_on <= day && day <= ch.ends_on && workoutCounts(ch, w.planItem),
-  );
+  const running = (await myChallenges()).filter((ch) => ch.starts_on <= day && day <= ch.ends_on && workoutCounts(ch, w.planItem));
   if (!running.length) return [];
   const payload = {
     workout_id: w.id,
@@ -596,7 +604,14 @@ export async function runningPlanItems(day: string): Promise<{ challenge: string
 // ─────────────── Daily challenge tasks ───────────────
 
 export const TASK_POINTS = 2;
-export const TASK_EXAMPLES = ['Drink 3 L water', 'Stretch 10 min', 'Walk outside 20 min', '8 hours of sleep', 'No added sugar', 'Read 10 pages'];
+export const TASK_EXAMPLES = [
+  'Drink 3 L water',
+  'Stretch 10 min',
+  'Walk outside 20 min',
+  '8 hours of sleep',
+  'No added sugar',
+  'Read 10 pages',
+];
 
 /** Which of a challenge's tasks I've ticked off on a day (task indexes). */
 export async function myTaskChecks(challengeId: string, day: string): Promise<number[]> {

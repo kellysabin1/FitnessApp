@@ -1,18 +1,18 @@
 import { serverPost } from './api';
-import { CATEGORY_LABEL } from './exercises';
-import {
-  personalRecords,
-  finished,
-  lastNDates,
-  setsDone,
-  workoutDurationMin,
-  latestBody,
-} from './stats';
+import { CATEGORY_LABEL, allExercises } from './exercises';
+import { personalRecords, finished, lastNDates, setsDone, workoutDurationMin, latestBody } from './stats';
 import type { CoachPlan } from './store';
-import { uid } from './store';
-import { allExercises } from './exercises';
-import { describeTarget, type PlannedExercise, type Split, type Target, TARGET_KIND_LABEL, type TargetPlan, targetsForCoach, upNext } from './training';
-import { GOAL_LABEL, healthForDate, todayKey, useStore } from './store';
+import { uid, GOAL_LABEL, healthForDate, todayKey, useStore } from './store';
+import {
+  describeTarget,
+  type PlannedExercise,
+  type Split,
+  type Target,
+  TARGET_KIND_LABEL,
+  type TargetPlan,
+  targetsForCoach,
+  upNext,
+} from './training';
 import { displayHeight, displayWeight, weightLabel } from './units';
 
 /**
@@ -46,8 +46,7 @@ export function buildCoachContext(): string {
 
   // Weight trend
   const weights = s.body.filter((b) => b.weightKg != null).slice(-8);
-  if (weights.length > 1)
-    lines.push(`Recent weigh-ins: ${weights.map((b) => `${b.date} ${displayWeight(b.weightKg, u)}`).join('; ')}`);
+  if (weights.length > 1) lines.push(`Recent weigh-ins: ${weights.map((b) => `${b.date} ${displayWeight(b.weightKg, u)}`).join('; ')}`);
 
   // Health (last 7 days)
   lines.push('## Wearable data, last 7 days (Apple Health incl. RingConn, and Oura)');

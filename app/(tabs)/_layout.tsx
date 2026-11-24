@@ -3,6 +3,7 @@ import { Platform } from 'react-native';
 import { Icon, IconName } from '@/src/components/ui';
 import { useStore } from '@/src/store';
 import { socialEnabled } from '@/src/config';
+import { hasCoreConsent } from '@/src/consent';
 import { colors, fonts } from '@/src/theme';
 
 const tab = (title: string, icon: IconName, activeIcon: IconName) => ({
@@ -15,8 +16,11 @@ const tab = (title: string, icon: IconName, activeIcon: IconName) => ({
 export default function TabLayout() {
   const onboarded = useStore((s) => s.onboarded);
   const signedIn = useStore((s) => !!s.account?.username);
+  const consents = useStore((s) => s.consents);
   // An account is required for the whole app (when the account server is configured).
   if (socialEnabled() && !signedIn) return <Redirect href="/welcome" />;
+  // …and so is agreeing to the terms and to health data being stored (REP-6).
+  if (socialEnabled() && !hasCoreConsent(consents)) return <Redirect href="/consent" />;
   if (!onboarded) return <Redirect href="/onboarding" />;
 
   return (

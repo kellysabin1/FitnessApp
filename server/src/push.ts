@@ -27,13 +27,15 @@ async function ensureVapid(): Promise<string> {
     if (!pub || !priv) {
       const keys = webpush.generateVAPIDKeys();
       // ignoreDuplicates: if two server instances race, the first write wins and we re-read it
-      await db().from('app_secrets').upsert(
-        [
-          { key: 'vapid_public', value: keys.publicKey },
-          { key: 'vapid_private', value: keys.privateKey },
-        ],
-        { onConflict: 'key', ignoreDuplicates: true },
-      );
+      await db()
+        .from('app_secrets')
+        .upsert(
+          [
+            { key: 'vapid_public', value: keys.publicKey },
+            { key: 'vapid_private', value: keys.privateKey },
+          ],
+          { onConflict: 'key', ignoreDuplicates: true },
+        );
       const { data: again } = await db().from('app_secrets').select('key, value').in('key', ['vapid_public', 'vapid_private']);
       pub = again?.find((r) => r.key === 'vapid_public')?.value;
       priv = again?.find((r) => r.key === 'vapid_private')?.value;
@@ -60,7 +62,9 @@ export async function pushToUsers(userIds: string[], message: PushMessage, ttlSe
   let sent = 0;
   for (const s of subs ?? []) {
     try {
-      await webpush.sendNotification({ endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } }, JSON.stringify(message), { TTL: ttlSeconds });
+      await webpush.sendNotification({ endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } }, JSON.stringify(message), {
+        TTL: ttlSeconds,
+      });
       sent++;
     } catch (err: any) {
       // 404/410 = that phone unsubscribed or reinstalled; tidy it up
@@ -124,7 +128,10 @@ export function mountPushRoutes(app: Express) {
         const challengeName = it.challenges?.name ?? 'your challenge';
         const message =
           it.kind === 'workout'
-            ? { title: `${name} just ${it.payload?.logged ? 'logged' : 'finished'} a workout 💪`, body: `${it.payload?.title ?? 'Workout'} · ${challengeName}. Your turn?` }
+            ? {
+                title: `${name} just ${it.payload?.logged ? 'logged' : 'finished'} a workout 💪`,
+                body: `${it.payload?.title ?? 'Workout'} · ${challengeName}. Your turn?`,
+              }
             : it.kind === 'nudge'
               ? { title: `${name} nudged you 👋`, body: `Time to move! · ${challengeName}` }
               : null;

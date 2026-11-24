@@ -65,7 +65,10 @@ export function LineChart({
   const vals = data.map((d) => d.value).concat(goal != null ? [goal] : []);
   let min = Math.min(...vals);
   let max = Math.max(...vals);
-  if (max - min < 1) { min -= 1; max += 1; }
+  if (max - min < 1) {
+    min -= 1;
+    max += 1;
+  }
   const range = max - min;
   const x = (i: number) => pad + (i / (data.length - 1)) * (width - pad * 2);
   const y = (v: number) => pad + (1 - (v - min) / range) * (height - pad * 2);
@@ -93,7 +96,13 @@ export function LineChart({
           </LinearGradient>
         </Defs>
         {goal != null ? (
-          <Path d={`M ${pad} ${y(goal)} L ${width - pad} ${y(goal)}`} stroke={colors.latte} strokeDasharray="4 6" strokeWidth={1} opacity={0.7} />
+          <Path
+            d={`M ${pad} ${y(goal)} L ${width - pad} ${y(goal)}`}
+            stroke={colors.latte}
+            strokeDasharray="4 6"
+            strokeWidth={1}
+            opacity={0.7}
+          />
         ) : null}
         <Path d={area} fill="url(#fill)" />
         <Path d={line} stroke={color} strokeWidth={2.5} fill="none" strokeLinecap="round" />
@@ -131,12 +140,28 @@ export function Bars({
     <View>
       <Svg width={width} height={height}>
         {goal ? (
-          <Path d={`M 0 ${height - (goal / max) * height} L ${width} ${height - (goal / max) * height}`} stroke={colors.latte} strokeDasharray="3 5" opacity={0.6} />
+          <Path
+            d={`M 0 ${height - (goal / max) * height} L ${width} ${height - (goal / max) * height}`}
+            stroke={colors.latte}
+            strokeDasharray="3 5"
+            opacity={0.6}
+          />
         ) : null}
         {data.map((d, i) => {
           const h = Math.max(3, (d.value / max) * (height - 4));
           const hit = goal != null && d.value >= goal;
-          return <Rect key={i} x={i * (bw + gap)} y={height - h} width={bw} height={h} rx={Math.min(8, bw / 2)} fill={hit ? highlight : color} opacity={d.value ? 1 : 0.25} />;
+          return (
+            <Rect
+              key={i}
+              x={i * (bw + gap)}
+              y={height - h}
+              width={bw}
+              height={h}
+              rx={Math.min(8, bw / 2)}
+              fill={hit ? highlight : color}
+              opacity={d.value ? 1 : 0.25}
+            />
+          );
         })}
       </Svg>
       <View style={{ flexDirection: 'row', marginTop: 6 }}>

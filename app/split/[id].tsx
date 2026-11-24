@@ -8,7 +8,12 @@ import { uid, useStore } from '@/src/store';
 import { colors, fonts, space } from '@/src/theme';
 import { type SplitWorkout, upNext } from '@/src/training';
 
-const SOURCE_LABEL = { custom: 'Your split', ai: 'Built by your coach', template: 'Ready-made split', coach: 'Saved from your coach' } as const;
+const SOURCE_LABEL = {
+  custom: 'Your split',
+  ai: 'Built by your coach',
+  template: 'Ready-made split',
+  coach: 'Saved from your coach',
+} as const;
 
 export default function SplitScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -41,9 +46,12 @@ export default function SplitScreen() {
 
   const confirm = (title: string, msg: string, action: string, go: () => void) => {
     if (Platform.OS === 'web') {
-      // eslint-disable-next-line no-alert
       if (window.confirm(`${title}\n\n${msg}`)) go();
-    } else Alert.alert(title, msg, [{ text: 'Cancel', style: 'cancel' }, { text: action, style: 'destructive', onPress: go }]);
+    } else
+      Alert.alert(title, msg, [
+        { text: 'Cancel', style: 'cancel' },
+        { text: action, style: 'destructive', onPress: go },
+      ]);
   };
 
   return (
@@ -56,10 +64,15 @@ export default function SplitScreen() {
               hitSlop={12}
               accessibilityLabel="Delete split"
               onPress={() =>
-                confirm('Delete this split?', `“${split.name}” and its workouts will be removed. Your logged workouts stay.`, 'Delete', () => {
-                  deleteSplit(split.id);
-                  router.back();
-                })
+                confirm(
+                  'Delete this split?',
+                  `“${split.name}” and its workouts will be removed. Your logged workouts stay.`,
+                  'Delete',
+                  () => {
+                    deleteSplit(split.id);
+                    router.back();
+                  },
+                )
               }
             >
               <Icon name="trash-outline" color={colors.textMuted} />
@@ -72,10 +85,21 @@ export default function SplitScreen() {
         <TextInput
           value={split.name}
           onChangeText={(name) => saveSplit({ ...split, name })}
-          style={{ fontFamily: fonts.display, fontSize: 32, color: colors.cream, padding: 0, marginTop: space(1), outlineStyle: 'none' as never }}
+          style={{
+            fontFamily: fonts.display,
+            fontSize: 32,
+            color: colors.cream,
+            padding: 0,
+            marginTop: space(1),
+            outlineStyle: 'none' as never,
+          }}
           accessibilityLabel="Split name"
         />
-        {split.notes ? <Body muted style={{ fontSize: 14, marginTop: space(2) }}>{split.notes}</Body> : null}
+        {split.notes ? (
+          <Body muted style={{ fontSize: 14, marginTop: space(2) }}>
+            {split.notes}
+          </Body>
+        ) : null}
 
         <Card style={{ marginTop: space(5), gap: space(2) }}>
           {active ? (
@@ -91,8 +115,16 @@ export default function SplitScreen() {
             </>
           ) : (
             <>
-              <Body muted style={{ fontSize: 13 }}>Make it active to see “Up next” on Today and Train.</Body>
-              <Button small title="Make this my active split" icon="checkmark" onPress={() => setActive(split.id)} disabled={!split.workouts.length} />
+              <Body muted style={{ fontSize: 13 }}>
+                Make it active to see “Up next” on Today and Train.
+              </Body>
+              <Button
+                small
+                title="Make this my active split"
+                icon="checkmark"
+                onPress={() => setActive(split.id)}
+                disabled={!split.workouts.length}
+              />
             </>
           )}
         </Card>
@@ -121,7 +153,11 @@ export default function SplitScreen() {
                     <Text style={{ fontFamily: fonts.display, fontSize: 21, color: colors.cream }}>
                       {i + 1}. {w.title}
                     </Text>
-                    {w.focus ? <Body muted style={{ fontSize: 13 }}>{w.focus}</Body> : null}
+                    {w.focus ? (
+                      <Body muted style={{ fontSize: 13 }}>
+                        {w.focus}
+                      </Body>
+                    ) : null}
                   </View>
                   <Row gap={3}>
                     <Pressable onPress={() => move(i, -1)} hitSlop={8} accessibilityLabel={`Move ${w.title} up`}>
@@ -141,12 +177,20 @@ export default function SplitScreen() {
                   ))}
                 </View>
                 <Row gap={2} style={{ marginTop: space(3) }}>
-                  <Button small title="Start" icon="play" style={{ flex: 1 }} onPress={() => router.push(`/workout/${startSplitWorkout(split, w)}`)} />
+                  <Button
+                    small
+                    title="Start"
+                    icon="play"
+                    style={{ flex: 1 }}
+                    onPress={() => router.push(`/workout/${startSplitWorkout(split, w)}`)}
+                  />
                   <Button small variant="secondary" title="Edit" onPress={() => setEditing(w.id)} />
                   <Pressable
                     hitSlop={8}
                     accessibilityLabel={`Remove ${w.title}`}
-                    onPress={() => confirm('Remove this workout?', w.title, 'Remove', () => setWorkouts(split.workouts.filter((x) => x.id !== w.id)))}
+                    onPress={() =>
+                      confirm('Remove this workout?', w.title, 'Remove', () => setWorkouts(split.workouts.filter((x) => x.id !== w.id)))
+                    }
                     style={{ padding: space(2) }}
                   >
                     <Icon name="close" size={18} color={colors.textMuted} />

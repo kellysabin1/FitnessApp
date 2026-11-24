@@ -1,10 +1,11 @@
 // Daily workout reminders.
-// Supabase's scheduler (supabase/reminders_cron.sql) calls POST /reminders/run every 15 minutes with a
+// Supabase's scheduler (supabase/jobs.sql) calls POST /reminders/run every 15 minutes with a
 // shared key. due_reminders() in the database decides who is due (their time has passed, nothing logged
 // today, not a rest day, not reminded yet), so this file only has to send the messages.
 import type { Express, Request, Response } from 'express';
 import { timingSafeEqual } from 'node:crypto';
 
+import { alertOwnerAboutDowntime } from './monitoring.js';
 import { pushToUsers } from './push.js';
 import { db, supabaseConfigured } from './supabase.js';
 
@@ -114,6 +115,7 @@ export function mountReminderRoutes(app: Express) {
         console.error('reminder failed for a user', e);
       }
     }
+    await alertOwnerAboutDowntime();
     res.json({ due: data?.length ?? 0, pushed, emailed });
   });
 }

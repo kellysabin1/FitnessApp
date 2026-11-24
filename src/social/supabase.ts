@@ -39,7 +39,7 @@ export function friendly(e: unknown): string {
   const msg = (e as { message?: string })?.message ?? String(e);
   if (/Invalid login credentials/i.test(msg)) return 'Wrong email or password.';
   if (/User already registered/i.test(msg)) return 'That email already has an account — sign in instead.';
-  if (/Password should be at least/i.test(msg)) return 'Password needs at least 6 characters.';
+  if (/Password should be at least/i.test(msg)) return 'Password needs at least 8 characters.';
   if (/profiles_username_key|duplicate key.*username/i.test(msg)) return 'That username is taken.';
   if (/profiles_username_check/i.test(msg)) return 'Usernames are 3–20 lowercase letters, numbers or _.';
   if (/friendships_pair|friendships_pkey/i.test(msg)) return 'You already have a request with this person.';

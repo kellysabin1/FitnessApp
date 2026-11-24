@@ -38,7 +38,9 @@ export default function Reminders() {
         setR(DEFAULT_REMINDERS);
         setErr((e as Error).message);
       });
-    pushState().then(setPush).catch(() => setPush('unsupported'));
+    pushState()
+      .then(setPush)
+      .catch(() => setPush('unsupported'));
     reminderStatus().then((s) => setEmailReady(s.email));
   }, []);
 
@@ -68,7 +70,8 @@ export default function Reminders() {
   return (
     <Screen padTop={false} contentStyle={{ gap: space(5), paddingBottom: space(16) }}>
       <Body muted>
-        If you haven’t logged a workout by your reminder time, rep. gives you a nudge. Logged one already, or taking a rest day? No reminder.
+        If you haven’t logged a workout by your reminder time, rep. gives you a nudge. Logged one already, or taking a rest day? No
+        reminder.
       </Body>
 
       <Card style={{ gap: space(3) }}>
@@ -80,7 +83,9 @@ export default function Reminders() {
           </Text>
           <Stepper icon="add" label="30 minutes later" onPress={() => update({ remindAt: shiftTime(r.remindAt, 30) })} />
         </Row>
-        <Body muted style={{ fontSize: 12, textAlign: 'center' }}>Your phone’s time zone is used automatically.</Body>
+        <Body muted style={{ fontSize: 12, textAlign: 'center' }}>
+          Your phone’s time zone is used automatically.
+        </Body>
       </Card>
 
       <Card style={{ gap: space(3) }}>
@@ -115,12 +120,7 @@ export default function Reminders() {
           </View>
         ) : null}
         <Divider />
-        <Toggle
-          title="Email"
-          value={r.email && emailReady}
-          disabled={!emailReady}
-          onChange={(email) => update({ email })}
-        />
+        <Toggle title="Email" value={r.email && emailReady} disabled={!emailReady} onChange={(email) => update({ email })} />
         <Body muted style={{ fontSize: 13 }}>
           {emailReady ? 'Sent to the email you sign in with.' : 'Email reminders are coming soon — push works now.'}
         </Body>
@@ -129,7 +129,9 @@ export default function Reminders() {
       <Card style={{ gap: space(2) }}>
         <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 15, color: colors.cream }}>Rest day</Text>
         <Body muted style={{ fontSize: 13 }}>
-          {restToday ? 'Today is a rest day — no reminder tonight. Recovery counts.' : 'Taking today off on purpose? Skip tonight’s reminder.'}
+          {restToday
+            ? 'Today is a rest day — no reminder tonight. Recovery counts.'
+            : 'Taking today off on purpose? Skip tonight’s reminder.'}
         </Body>
         <Button
           small
@@ -145,7 +147,17 @@ export default function Reminders() {
   );
 }
 
-function Toggle({ title, value, onChange, disabled }: { title: string; value: boolean; onChange: (v: boolean) => void; disabled?: boolean }) {
+function Toggle({
+  title,
+  value,
+  onChange,
+  disabled,
+}: {
+  title: string;
+  value: boolean;
+  onChange: (v: boolean) => void;
+  disabled?: boolean;
+}) {
   return (
     <Row style={{ justifyContent: 'space-between' }}>
       <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 15, color: disabled ? colors.textMuted : colors.cream }}>{title}</Text>
@@ -168,7 +180,15 @@ function Stepper({ icon, label, onPress }: { icon: 'add' | 'remove'; label: stri
       onPress={onPress}
       accessibilityLabel={label}
       hitSlop={8}
-      style={{ width: 44, height: 44, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.line, alignItems: 'center', justifyContent: 'center' }}
+      style={{
+        width: 44,
+        height: 44,
+        borderRadius: radius.pill,
+        borderWidth: 1,
+        borderColor: colors.line,
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
     >
       <Icon name={icon} size={20} color={colors.cream} />
     </Pressable>

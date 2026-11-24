@@ -14,7 +14,9 @@ export function DailyTasks({ c, compact, onChanged }: { c: Challenge; compact?: 
 
   useFocusEffect(
     useCallback(() => {
-      myTaskChecks(c.id, day).then(setDone).catch(() => {});
+      myTaskChecks(c.id, day)
+        .then(setDone)
+        .catch(() => {});
     }, [c.id, day]),
   );
 
@@ -73,4 +75,3 @@ export function DailyTasks({ c, compact, onChanged }: { c: Challenge; compact?: 
     </View>
   );
 }
-

@@ -3,6 +3,8 @@ import { useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, Text, View } from 'react-native';
 import { Body, Button, Card, Chip, Divider, Eyebrow, Field, H2, Heart, Row, Screen } from '@/src/components/ui';
 import { saveProfile, sendPasswordReset, signIn, signOut, signUp, USERNAME_RE } from '@/src/social/api';
+import { Checkbox, TextLink } from '@/src/components/Checkbox';
+import { recordConsent } from '@/src/consent';
 import { useStore } from '@/src/store';
 import { colors, fonts, space } from '@/src/theme';
 
@@ -23,13 +25,19 @@ export function SignIn({ intro, padTop = false }: { intro?: React.ReactNode; pad
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ text: string; ok?: boolean } | null>(null);
+  const [agreeTerms, setAgreeTerms] = useState(false);
+  const [agreeHealth, setAgreeHealth] = useState(false);
 
   const submit = async () => {
     setBusy(true);
     setMsg(null);
     try {
-      if (mode === 'up') await signUp(email, password);
-      else await signIn(email, password);
+      if (mode === 'up') {
+        // explicit, separate consents — saved to the account log once the profile exists
+        await recordConsent('terms_privacy');
+        await recordConsent('health_data');
+        await signUp(email, password);
+      } else await signIn(email, password);
     } catch (e) {
       setMsg({ text: (e as Error).message });
     } finally {
@@ -77,15 +85,31 @@ export function SignIn({ intro, padTop = false }: { intro?: React.ReactNode; pad
           label="Password"
           value={password}
           onChangeText={setPassword}
-          placeholder={mode === 'up' ? 'At least 6 characters' : 'Your password'}
+          placeholder={mode === 'up' ? 'At least 8 characters' : 'Your password'}
           secureTextEntry
           autoCapitalize="none"
           autoComplete={mode === 'up' ? 'new-password' : 'current-password'}
         />
+        {mode === 'up' ? (
+          <View style={{ gap: space(3) }}>
+            <Checkbox
+              checked={agreeTerms}
+              onChange={setAgreeTerms}
+              label="I agree to the Terms of Use and Privacy Policy, and I’m 16 or older"
+            >
+              I agree to the <TextLink title="Terms of Use" onPress={() => router.push('/terms')} /> and{' '}
+              <TextLink title="Privacy Policy" onPress={() => router.push('/privacy')} />, and I’m 16 or older.
+            </Checkbox>
+            <Checkbox checked={agreeHealth} onChange={setAgreeHealth} label="I consent to rep. storing my health and fitness data">
+              I consent to rep. storing my health and fitness data (workouts, body measurements, steps, and wearable data if I connect it)
+              to run the app for me. It’s never sold.
+            </Checkbox>
+          </View>
+        ) : null}
         <Button
           title={mode === 'up' ? 'Create account' : 'Sign in'}
           loading={busy}
-          disabled={!email.includes('@') || password.length < 6}
+          disabled={!email.includes('@') || password.length < (mode === 'up' ? 8 : 1) || (mode === 'up' && !(agreeTerms && agreeHealth))}
           onPress={submit}
         />
         {mode === 'in' ? <Button title="Forgot password?" variant="ghost" small onPress={reset} /> : null}
@@ -97,7 +121,12 @@ export function SignIn({ intro, padTop = false }: { intro?: React.ReactNode; pad
 
 /** Pick @username + display name. `onDone` defaults to closing the screen. */
 export function PickUsername({ suggested, onDone, padTop = false }: { suggested: string; onDone?: () => void; padTop?: boolean }) {
-  const [username, setUsername] = useState(suggested.toLowerCase().replace(/[^a-z0-9_]/g, '').slice(0, 20));
+  const [username, setUsername] = useState(
+    suggested
+      .toLowerCase()
+      .replace(/[^a-z0-9_]/g, '')
+      .slice(0, 20),
+  );
   const [name, setName] = useState(suggested);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -146,7 +175,9 @@ function SignedIn() {
         <Eyebrow>Signed in</Eyebrow>
         <H2>@{account.username}</H2>
         <Body muted>{account.displayName}</Body>
-        <Body muted style={{ fontSize: 13 }}>{account.email}</Body>
+        <Body muted style={{ fontSize: 13 }}>
+          {account.email}
+        </Body>
         <Divider />
         <Body muted style={{ fontSize: 13 }}>
           {lastSyncAt ? `Backed up ${new Date(lastSyncAt).toLocaleString()}` : 'Backing up…'}
@@ -157,6 +188,7 @@ function SignedIn() {
         Signing out removes your data from this phone. It’s saved in your account and comes back when you sign in.
       </Body>
       <Button title="Sign out" variant="danger" onPress={() => confirmSignOut()} />
+      <Button title="Privacy & your data" variant="ghost" small icon="shield-checkmark-outline" onPress={() => router.push('/your-data')} />
       <View style={{ height: space(4) }} />
     </Screen>
   );
@@ -166,7 +198,6 @@ async function confirmSignOut() {
   const ask = (title: string, msg: string) =>
     new Promise<boolean>((resolve) => {
       if (Platform.OS === 'web') {
-        // eslint-disable-next-line no-alert
         resolve(confirm(`${title}\n\n${msg}`));
       } else {
         Alert.alert(title, msg, [

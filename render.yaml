@@ -38,6 +38,30 @@ services:
       - type: rewrite
         source: /*
         destination: /index.html
+    # Security headers (REP-3/REP-6). e2e/support/serve.mjs applies these same headers in tests, so a
+    # policy that breaks the app fails CI. If you add a new outside service, add its host to connect-src.
+    headers:
+      - path: /*
+        name: Content-Security-Policy
+        value: "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://kkhpfyxrestlohjvpcit.supabase.co https://rep-coach.onrender.com https://api.ouraring.com; worker-src 'self'; manifest-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'"
+      - path: /*
+        name: Strict-Transport-Security
+        value: max-age=63072000; includeSubDomains
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: X-Frame-Options
+        value: DENY
+      - path: /*
+        name: Referrer-Policy
+        value: no-referrer
+      - path: /*
+        name: Permissions-Policy
+        value: camera=(), microphone=(), geolocation=(), payment=(), usb=()
+      - path: /*
+        name: Cross-Origin-Opener-Policy
+        value: same-origin
     envVars:
       - key: NODE_VERSION
         value: "22"

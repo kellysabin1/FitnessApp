@@ -127,8 +127,7 @@ export const MEASUREMENT_LABEL: Record<MeasurementField, string> = { waistCm: 'W
 export const isRate = (k: TargetKind) => k === 'steps' || k === 'workouts';
 
 /** Is lower better? (weight loss, faster run, smaller waist…) */
-export const lowerIsBetter = (t: Pick<Target, 'startValue' | 'targetValue' | 'kind'>) =>
-  !isRate(t.kind) && t.targetValue < t.startValue;
+export const lowerIsBetter = (t: Pick<Target, 'startValue' | 'targetValue' | 'kind'>) => !isRate(t.kind) && t.targetValue < t.startValue;
 
 export interface Ctx {
   workouts: Workout[];
@@ -185,7 +184,13 @@ export function currentValue(t: Target, ctx: Ctx): number | undefined {
 
 /** Starting value suggestion when creating a target (what you're at today). */
 export function suggestedStart(kind: TargetKind, ctx: Ctx, opts: { exercise?: string; measurement?: MeasurementField }) {
-  const probe = { kind, checkins: [], startDate: '0000-01-01', exercise: opts.exercise, measurement: opts.measurement } as unknown as Target;
+  const probe = {
+    kind,
+    checkins: [],
+    startDate: '0000-01-01',
+    exercise: opts.exercise,
+    measurement: opts.measurement,
+  } as unknown as Target;
   if (kind === 'lift' && opts.exercise) return heaviest(ctx.workouts, opts.exercise);
   return currentValue(probe, ctx);
 }
@@ -323,4 +328,3 @@ export function targetsForCoach(targets: Target[], ctx: Ctx, units: Units) {
     })
     .join('\n');
 }
-

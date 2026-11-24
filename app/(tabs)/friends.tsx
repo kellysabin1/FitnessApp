@@ -5,14 +5,7 @@ import { Body, Button, Card, Display, Empty, Eyebrow, H2, Icon, Italic, Row, Scr
 import { socialEnabled } from '@/src/config';
 import { PushPrompt } from '@/src/social/PushPrompt';
 import { Person } from '@/src/social/Person';
-import {
-  acceptFriend,
-  type Challenge,
-  type Friendship,
-  listFriendships,
-  myChallenges,
-  removeFriendship,
-} from '@/src/social/api';
+import { acceptFriend, type Challenge, type Friendship, listFriendships, myChallenges, removeFriendship } from '@/src/social/api';
 import { todayKey, useStore } from '@/src/store';
 import { colors, fonts, space } from '@/src/theme';
 
@@ -23,7 +16,11 @@ export default function Friends() {
     return (
       <Screen>
         <Header />
-        <Empty icon="people-outline" title="Almost ready" text="Friends & challenges switch on once the rep. account server is connected." />
+        <Empty
+          icon="people-outline"
+          title="Almost ready"
+          text="Friends & challenges switch on once the rep. account server is connected."
+        />
       </Screen>
     );
   }
@@ -36,8 +33,8 @@ export default function Friends() {
           <Eyebrow>Built-in accountability</Eyebrow>
           <H2>Add friends, start a challenge, keep each other going.</H2>
           <Body muted>
-            Share workouts and steps with your group, follow the same plan, climb the leaderboard and get a ping when your
-            friends finish a workout.
+            Share workouts and steps with your group, follow the same plan, climb the leaderboard and get a ping when your friends finish a
+            workout.
           </Body>
           <Button
             title={account ? 'Finish your profile' : 'Create an account'}
@@ -71,8 +68,12 @@ function SignedInFriends() {
 
   const load = useCallback(() => {
     setErr(null);
-    myChallenges().then(setChallenges).catch((e) => setErr((e as Error).message));
-    listFriendships().then(setFriends).catch((e) => setErr((e as Error).message));
+    myChallenges()
+      .then(setChallenges)
+      .catch((e) => setErr((e as Error).message));
+    listFriendships()
+      .then(setFriends)
+      .catch((e) => setErr((e as Error).message));
   }, []);
   useFocusEffect(load);
 
@@ -98,7 +99,11 @@ function SignedInFriends() {
       {challenges === null ? (
         <Body muted>Loading…</Body>
       ) : active.length === 0 ? (
-        <Empty icon="trophy-outline" title="No challenge yet" text="Start one with friends — pick the length, how points work and an optional shared plan.">
+        <Empty
+          icon="trophy-outline"
+          title="No challenge yet"
+          text="Start one with friends — pick the length, how points work and an optional shared plan."
+        >
           <Button title="New challenge" icon="add" onPress={() => router.push('/challenge-new')} />
         </Empty>
       ) : (
@@ -118,8 +123,23 @@ function SignedInFriends() {
               <Row key={f.requester} style={{ justifyContent: 'space-between', paddingVertical: space(2) }}>
                 <Person name={f.other.display_name} username={f.other.username} />
                 <Row gap={2}>
-                  <Button small title="Accept" onPress={() => acceptFriend(f.requester).then(load).catch((e) => setErr(e.message))} />
-                  <Pressable hitSlop={10} onPress={() => removeFriendship(f).then(load).catch((e) => setErr(e.message))}>
+                  <Button
+                    small
+                    title="Accept"
+                    onPress={() =>
+                      acceptFriend(f.requester)
+                        .then(load)
+                        .catch((e) => setErr(e.message))
+                    }
+                  />
+                  <Pressable
+                    hitSlop={10}
+                    onPress={() =>
+                      removeFriendship(f)
+                        .then(load)
+                        .catch((e) => setErr(e.message))
+                    }
+                  >
                     <Icon name="close" size={18} color={colors.textFaint} />
                   </Pressable>
                 </Row>
@@ -173,7 +193,13 @@ function ChallengeCard({ c, tone }: { c: Challenge; tone: 'croc' | 'satin' | 'de
   return (
     <Card tone={tone} onPress={() => router.push({ pathname: '/challenge/[id]', params: { id: c.id } })}>
       <Eyebrow color={colors.latte}>
-        {daysLeft < 0 ? 'Finished' : notStarted ? `Starts ${new Date(c.starts_on + 'T12:00').toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}` : daysLeft === 0 ? 'Last day' : `${daysLeft} days left`}
+        {daysLeft < 0
+          ? 'Finished'
+          : notStarted
+            ? `Starts ${new Date(c.starts_on + 'T12:00').toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}`
+            : daysLeft === 0
+              ? 'Last day'
+              : `${daysLeft} days left`}
       </Eyebrow>
       <H2 style={{ marginTop: space(1) }}>{c.name}</H2>
       <Body muted style={{ fontSize: 13 }}>

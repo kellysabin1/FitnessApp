@@ -95,7 +95,14 @@ export default function Today() {
           </Row>
           {!connected ? (
             <Row gap={2} style={{ marginTop: space(5) }}>
-              <Button small variant="secondary" icon="footsteps-outline" title="Log steps" style={{ flex: 1 }} onPress={() => router.push('/log-steps')} />
+              <Button
+                small
+                variant="secondary"
+                icon="footsteps-outline"
+                title="Log steps"
+                style={{ flex: 1 }}
+                onPress={() => router.push('/log-steps')}
+              />
               <Button small variant="ghost" icon="link-outline" title="Connect" onPress={() => router.push('/you')} />
             </Row>
           ) : null}
@@ -132,12 +139,20 @@ export default function Today() {
               style={{ marginTop: space(4) }}
               onPress={() => router.push(`/workout/${s.startWorkout()}`)}
             />
-            <Button title="Log one I already did" variant="ghost" small style={{ marginTop: space(2) }} onPress={() => router.push('/log-past')} />
+            <Button
+              title="Log one I already did"
+              variant="ghost"
+              small
+              style={{ marginTop: space(2) }}
+              onPress={() => router.push('/log-past')}
+            />
             {!loggedToday && s.account ? (
               restToday ? (
                 <Row style={{ justifyContent: 'center', marginTop: space(2) }} gap={2}>
                   <Icon name="moon-outline" size={14} color={colors.olive} />
-                  <Body muted style={{ fontSize: 13 }}>Rest day — no reminder tonight.</Body>
+                  <Body muted style={{ fontSize: 13 }}>
+                    Rest day — no reminder tonight.
+                  </Body>
                   <Pressable onPress={() => setRestDay(false).catch(() => {})} hitSlop={8}>
                     <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 13, color: colors.latte }}>Undo</Text>
                   </Pressable>
@@ -161,7 +176,9 @@ export default function Today() {
           {s.plan ? (
             <>
               <H2 style={{ marginTop: space(2) }}>{s.plan.headline}</H2>
-              <Body muted style={{ marginTop: space(1) }}>{s.plan.focus}</Body>
+              <Body muted style={{ marginTop: space(1) }}>
+                {s.plan.focus}
+              </Body>
             </>
           ) : (
             <>
@@ -183,11 +200,21 @@ export default function Today() {
         <SectionHeader title="Snapshot" action="Log body" onAction={() => router.push('/log-body')} />
         <Row gap={3}>
           <Card style={{ flex: 1 }}>
-            <Stat label="Weight" value={weight ? displayWeight(weight.weightKg, s.units) : '—'} unit={weightLabel(s.units)} icon="scale-outline" />
+            <Stat
+              label="Weight"
+              value={weight ? displayWeight(weight.weightKg, s.units) : '—'}
+              unit={weightLabel(s.units)}
+              icon="scale-outline"
+            />
           </Card>
           <Card style={{ flex: 1 }}>
             {lastDone ? (
-              <Stat label={`Last · ${relativeDay(lastDone.startedAt)}`} value={String(workoutDurationMin(lastDone))} unit="min" icon="time-outline" />
+              <Stat
+                label={`Last · ${relativeDay(lastDone.startedAt)}`}
+                value={String(workoutDurationMin(lastDone))}
+                unit="min"
+                icon="time-outline"
+              />
             ) : (
               <Stat label="Last workout" value="—" icon="time-outline" />
             )}

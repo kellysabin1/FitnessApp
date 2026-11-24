@@ -48,13 +48,23 @@ export default function ChallengeScreen() {
     getChallenge(id)
       .then(setC)
       .catch((e) => setErr((e as Error).message));
-    loadBoard(id).then(setBoard).catch(() => {});
-    loadFeed(id).then(setItems).catch(() => {});
+    loadBoard(id)
+      .then(setBoard)
+      .catch(() => {});
+    loadFeed(id)
+      .then(setItems)
+      .catch(() => {});
   }, [id]);
   useFocusEffect(load);
 
-  if (c === undefined) return <Screen padTop={false}>{err ? <Body style={{ color: colors.sand }}>{err}</Body> : <Body muted>Loading…</Body>}</Screen>;
-  if (c === null) return <Screen padTop={false}><Body muted>This challenge doesn’t exist, or you’re no longer in it.</Body></Screen>;
+  if (c === undefined)
+    return <Screen padTop={false}>{err ? <Body style={{ color: colors.sand }}>{err}</Body> : <Body muted>Loading…</Body>}</Screen>;
+  if (c === null)
+    return (
+      <Screen padTop={false}>
+        <Body muted>This challenge doesn’t exist, or you’re no longer in it.</Body>
+      </Screen>
+    );
 
   const today = todayKey();
   const dayNum = Math.floor((+new Date(today + 'T12:00') - +new Date(c.starts_on + 'T12:00')) / 86400000) + 1;
@@ -65,7 +75,13 @@ export default function ChallengeScreen() {
   const mySteps = healthForDate(health, today).steps;
 
   const donePlan = (title: string) =>
-    workouts.some((w) => w.finishedAt && w.planItem === title && todayKey(new Date(w.startedAt)) >= c.starts_on && todayKey(new Date(w.startedAt)) <= c.ends_on);
+    workouts.some(
+      (w) =>
+        w.finishedAt &&
+        w.planItem === title &&
+        todayKey(new Date(w.startedAt)) >= c.starts_on &&
+        todayKey(new Date(w.startedAt)) <= c.ends_on,
+    );
 
   const startPlan = (title: string, exercises: string[]) => {
     const wid = startWorkout(title, title);
@@ -98,22 +114,34 @@ export default function ChallengeScreen() {
   };
 
   const leave = () => {
-    const go = () => leaveChallenge(c.id).then(() => router.back()).catch((e) => setErr(e.message));
+    const go = () =>
+      leaveChallenge(c.id)
+        .then(() => router.back())
+        .catch((e) => setErr(e.message));
     if (Platform.OS === 'web') {
-      // eslint-disable-next-line no-alert
       if (confirm(`Leave “${c.name}”?`)) go();
-    } else Alert.alert('Leave challenge?', c.name, [{ text: 'Cancel', style: 'cancel' }, { text: 'Leave', style: 'destructive', onPress: go }]);
+    } else
+      Alert.alert('Leave challenge?', c.name, [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Leave', style: 'destructive', onPress: go },
+      ]);
   };
 
   const isCreator = c.created_by === me;
   const remove = () => {
-    const go = () => deleteChallenge(c.id).then(() => router.back()).catch((e) => setErr(e.message));
+    const go = () =>
+      deleteChallenge(c.id)
+        .then(() => router.back())
+        .catch((e) => setErr(e.message));
     const others = Math.max(0, board.length - 1);
     const msg = `This deletes “${c.name}” for everyone${others ? ` (${others} other member${others > 1 ? 's' : ''})` : ''}, including the leaderboard and feed. Everyone keeps their own workouts.`;
     if (Platform.OS === 'web') {
-      // eslint-disable-next-line no-alert
       if (confirm(`${msg}\n\nDelete challenge?`)) go();
-    } else Alert.alert('Delete challenge?', msg, [{ text: 'Cancel', style: 'cancel' }, { text: 'Delete', style: 'destructive', onPress: go }]);
+    } else
+      Alert.alert('Delete challenge?', msg, [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Delete', style: 'destructive', onPress: go },
+      ]);
   };
 
   return (
@@ -146,7 +174,9 @@ export default function ChallengeScreen() {
           {showAdd ? (
             <View style={{ marginTop: space(2) }}>
               {friends.filter((f) => !memberIds.has(f.id)).length === 0 ? (
-                <Body muted style={{ fontSize: 13 }}>All your friends are already in — or add friends from the Friends tab first.</Body>
+                <Body muted style={{ fontSize: 13 }}>
+                  All your friends are already in — or add friends from the Friends tab first.
+                </Body>
               ) : (
                 friends
                   .filter((f) => !memberIds.has(f.id))
@@ -193,7 +223,9 @@ export default function ChallengeScreen() {
           {board.map((r, i) => (
             <View key={r.user_id} style={{ paddingVertical: space(3), borderTopWidth: i ? 1 : 0, borderTopColor: colors.line }}>
               <Row gap={3}>
-                <Text style={{ width: 22, fontFamily: fonts.display, fontSize: 22, color: i === 0 ? colors.brass : colors.textMuted }}>{i + 1}</Text>
+                <Text style={{ width: 22, fontFamily: fonts.display, fontSize: 22, color: i === 0 ? colors.brass : colors.textMuted }}>
+                  {i + 1}
+                </Text>
                 <View style={{ flex: 1 }}>
                   <Person
                     name={r.user_id === me ? `${r.display_name || r.username} (you)` : r.display_name}
@@ -249,9 +281,16 @@ export default function ChallengeScreen() {
                   <Text style={{ fontFamily: fonts.display, fontSize: 30, color: colors.cream }}>
                     {mySteps != null ? mySteps.toLocaleString() : '—'}
                   </Text>
-                  <Body muted style={{ fontSize: 13 }}>Goal {c.step_goal.toLocaleString()}</Body>
+                  <Body muted style={{ fontSize: 13 }}>
+                    Goal {c.step_goal.toLocaleString()}
+                  </Body>
                 </View>
-                <Button small variant="secondary" title={mySteps != null ? 'Update' : 'Log steps'} onPress={() => router.push('/log-steps')} />
+                <Button
+                  small
+                  variant="secondary"
+                  title={mySteps != null ? 'Update' : 'Log steps'}
+                  onPress={() => router.push('/log-steps')}
+                />
               </Row>
             </Card>
           </>
@@ -269,7 +308,9 @@ export default function ChallengeScreen() {
                     <Row style={{ justifyContent: 'space-between' }}>
                       <View style={{ flex: 1, marginRight: space(3) }}>
                         <H2 style={{ fontSize: 20 }}>{p.title}</H2>
-                        <Body muted numberOfLines={1} style={{ fontSize: 13 }}>{p.exercises.join(' · ')}</Body>
+                        <Body muted numberOfLines={1} style={{ fontSize: 13 }}>
+                          {p.exercises.join(' · ')}
+                        </Body>
                       </View>
                       {done ? (
                         <Row gap={1}>
@@ -325,7 +366,16 @@ function Breakdown({ r, c }: { r: LeaderRow; c: Challenge }) {
     (c.tasks?.length ?? 0) > 0 && { label: 'Daily tasks', detail: `${r.tasks_done} × ${TASK_POINTS}`, pts: r.pts_tasks },
   ].filter(Boolean) as { label: string; detail: string; pts: number }[];
   return (
-    <View style={{ marginTop: space(3), marginLeft: 22 + space(3), padding: space(3), borderRadius: radius.md, backgroundColor: colors.bgRaised, gap: space(2) }}>
+    <View
+      style={{
+        marginTop: space(3),
+        marginLeft: 22 + space(3),
+        padding: space(3),
+        borderRadius: radius.md,
+        backgroundColor: colors.bgRaised,
+        gap: space(2),
+      }}
+    >
       {rows.map((x) => (
         <Row key={x.label} style={{ justifyContent: 'space-between' }}>
           <View style={{ flex: 1 }}>
@@ -349,7 +399,8 @@ function ScoringRules({ c }: { c: Challenge }) {
   const planOnly = c.mode === 'plan';
   const lines = [
     c.score_workouts && `${planOnly ? 'Each plan workout' : 'Each workout'} = 10 points (up to 2 a day).`,
-    c.score_steps && `Every 1,000 steps = 1 point (up to 20 a day), plus 5 bonus points on days you reach ${c.step_goal.toLocaleString()} steps.`,
+    c.score_steps &&
+      `Every 1,000 steps = 1 point (up to 20 a day), plus 5 bonus points on days you reach ${c.step_goal.toLocaleString()} steps.`,
     c.score_streaks &&
       `Streaks: 3 points for each active day in a row after the first. Active = ${planOnly ? 'a plan workout' : 'a workout'}${c.score_steps ? ' or hitting the step goal' : ''}.`,
     !planOnly && c.score_plan && c.plan.length > 0 && 'Group plan bonus: +5 for each workout from the plan.',
@@ -417,7 +468,9 @@ function FeedCard({ it, me, board, onChanged }: { it: FeedItem; me: string; boar
               key={e}
               onPress={() => {
                 tap();
-                toggleReaction(it, e).then(onChanged).catch(() => {});
+                toggleReaction(it, e)
+                  .then(onChanged)
+                  .catch(() => {});
               }}
               style={{
                 paddingHorizontal: space(3),
@@ -439,4 +492,3 @@ function FeedCard({ it, me, board, onChanged }: { it: FeedItem; me: string; boar
     </Card>
   );
 }
-

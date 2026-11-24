@@ -9,6 +9,7 @@
     "@kingstinct/react-native-healthkit": "^16.2.0",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@supabase/supabase-js": "^2.119.0",
+    "eslint-config-expo": "~58.0.4",
     "expo": "~58.0.25",
     "expo-auth-session": "~58.0.18",
     "expo-constants": "~58.0.16",
@@ -35,14 +36,24 @@
     "zustand": "^5.1.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "@types/react": "~19.3.0",
+    "eslint": "^9.39.5",
+    "eslint-config-prettier": "^10.1.8",
+    "prettier": "^3.10.1",
     "typescript": "~6.0.3"
   },
   "scripts": {
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p server && tsc --noEmit -p e2e",
+    "e2e": "playwright test",
+    "test:db": "bash supabase/test-db.sh"
   },
   "private": true
 }

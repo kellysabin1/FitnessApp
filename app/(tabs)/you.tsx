@@ -1,6 +1,22 @@
 import { useEffect, useState } from 'react';
-import { Alert, Platform, Text, View } from 'react-native';
-import { Body, Button, Card, Chip, Display, Divider, Eyebrow, Field, H2, Icon, IconName, Italic, Row, Screen, SectionHeader } from '@/src/components/ui';
+import { Text, View } from 'react-native';
+import {
+  Body,
+  Button,
+  Card,
+  Chip,
+  Display,
+  Divider,
+  Eyebrow,
+  Field,
+  H2,
+  Icon,
+  IconName,
+  Italic,
+  Row,
+  Screen,
+  SectionHeader,
+} from '@/src/components/ui';
 import { appleHealthSupported, connectAppleHealth } from '@/src/health/appleHealth';
 import { connectOura, OURA_CLIENT_ID } from '@/src/health/oura';
 import { syncHealth } from '@/src/health/sync';
@@ -32,20 +48,7 @@ export default function You() {
     }
   };
 
-  const toggleGoal = (g: Goal) =>
-    s.updateProfile({ goals: p.goals.includes(g) ? p.goals.filter((x) => x !== g) : [...p.goals, g] });
-
-  const reset = () => {
-    const go = () => s.resetAll();
-    if (Platform.OS === 'web') {
-      // eslint-disable-next-line no-alert
-      if (confirm('Erase all rep. data on this device?')) go();
-    } else
-      Alert.alert('Erase everything?', 'All workouts, weigh-ins and settings on this phone will be deleted.', [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Erase', style: 'destructive', onPress: go },
-      ]);
-  };
+  const toggleGoal = (g: Goal) => s.updateProfile({ goals: p.goals.includes(g) ? p.goals.filter((x) => x !== g) : [...p.goals, g] });
 
   return (
     <Screen>
@@ -70,6 +73,17 @@ export default function You() {
           </Row>
         </Card>
       ) : null}
+
+      <SectionHeader title="Privacy" />
+      <Card onPress={() => router.push('/your-data')}>
+        <Connection
+          icon="shield-checkmark-outline"
+          tint={colors.latte}
+          title="Privacy & your data"
+          sub="Download everything, see what you’ve agreed to, turn off the AI coach, or delete your account."
+          action={<Icon name="chevron-forward" size={18} color={colors.textMuted} />}
+        />
+      </Card>
 
       <SectionHeader title="Reminders" />
       <Card onPress={() => router.push('/reminders')}>
@@ -188,11 +202,26 @@ export default function You() {
         </View>
         {u === 'us' ? (
           <Row>
-            <NumField label="Height" suffix="ft" value={h ? String(h.ft) : ''} onCommit={(v) => s.updateProfile({ heightCm: ftInToCm(parseInt(v) || 0, h?.inch ?? 0) })} />
-            <NumField label=" " suffix="in" value={h ? String(h.inch) : ''} onCommit={(v) => s.updateProfile({ heightCm: ftInToCm(h?.ft ?? 0, parseInt(v) || 0) })} />
+            <NumField
+              label="Height"
+              suffix="ft"
+              value={h ? String(h.ft) : ''}
+              onCommit={(v) => s.updateProfile({ heightCm: ftInToCm(parseInt(v) || 0, h?.inch ?? 0) })}
+            />
+            <NumField
+              label=" "
+              suffix="in"
+              value={h ? String(h.inch) : ''}
+              onCommit={(v) => s.updateProfile({ heightCm: ftInToCm(h?.ft ?? 0, parseInt(v) || 0) })}
+            />
           </Row>
         ) : (
-          <NumField label="Height" suffix="cm" value={p.heightCm ? String(Math.round(p.heightCm)) : ''} onCommit={(v) => s.updateProfile({ heightCm: parseFloat(v) || undefined })} />
+          <NumField
+            label="Height"
+            suffix="cm"
+            value={p.heightCm ? String(Math.round(p.heightCm)) : ''}
+            onCommit={(v) => s.updateProfile({ heightCm: parseFloat(v) || undefined })}
+          />
         )}
         <NumField
           label="Goal weight"
@@ -200,7 +229,12 @@ export default function You() {
           value={kgToInput(p.goalWeightKg, u)}
           onCommit={(v) => s.updateProfile({ goalWeightKg: inputToKg(v, u) })}
         />
-        <NumField label="Daily step goal" suffix="steps" value={String(p.stepGoal)} onCommit={(v) => s.updateProfile({ stepGoal: parseInt(v) || p.stepGoal })} />
+        <NumField
+          label="Daily step goal"
+          suffix="steps"
+          value={String(p.stepGoal)}
+          onCommit={(v) => s.updateProfile({ stepGoal: parseInt(v) || p.stepGoal })}
+        />
       </Card>
 
       <SectionHeader title="Goals & training" />
@@ -214,7 +248,12 @@ export default function You() {
         <Text style={styles.label}>Experience</Text>
         <Row gap={2}>
           {(['beginner', 'intermediate', 'advanced'] as Experience[]).map((e) => (
-            <Chip key={e} label={e[0].toUpperCase() + e.slice(1)} active={p.experience === e} onPress={() => s.updateProfile({ experience: e })} />
+            <Chip
+              key={e}
+              label={e[0].toUpperCase() + e.slice(1)}
+              active={p.experience === e}
+              onPress={() => s.updateProfile({ experience: e })}
+            />
           ))}
         </Row>
         <Text style={styles.label}>Days per week</Text>
@@ -227,7 +266,6 @@ export default function You() {
         <Field label="Injuries & preferences" value={p.notes} onChangeText={(notes) => s.updateProfile({ notes })} multiline />
       </Card>
 
-      <Button title="Erase all data" variant="danger" style={{ marginTop: space(8) }} onPress={reset} />
       <H2 style={{ textAlign: 'center', marginTop: space(8), color: colors.textFaint, fontSize: 18 }}>
         rep. <Italic style={{ color: colors.textFaint }}>v1</Italic>
       </H2>
@@ -235,7 +273,19 @@ export default function You() {
   );
 }
 
-function Connection({ icon, tint, title, sub, action }: { icon: IconName; tint: string; title: string; sub: string; action?: React.ReactNode }) {
+function Connection({
+  icon,
+  tint,
+  title,
+  sub,
+  action,
+}: {
+  icon: IconName;
+  tint: string;
+  title: string;
+  sub: string;
+  action?: React.ReactNode;
+}) {
   return (
     <Row style={{ paddingVertical: space(1) }}>
       <View style={styles.connIcon}>
@@ -260,9 +310,15 @@ function NumField({ label, suffix, value, onCommit }: { label: string; suffix?: 
       label={label}
       suffix={suffix}
       value={focused ? t : value}
-      onFocus={() => { setT(value); setFocused(true); }}
+      onFocus={() => {
+        setT(value);
+        setFocused(true);
+      }}
       onChangeText={setT}
-      onBlur={() => { setFocused(false); onCommit(t); }}
+      onBlur={() => {
+        setFocused(false);
+        onCommit(t);
+      }}
       keyboardType="decimal-pad"
     />
   );
@@ -307,7 +363,9 @@ function AccountCoachStatus() {
   return (
     <Card style={{ gap: space(2) }}>
       <Text style={styles.connTitle}>AI coach</Text>
-      <Body muted style={{ fontSize: 13, color: access === 'enabled' ? colors.latte : colors.textMuted }}>{text}</Body>
+      <Body muted style={{ fontSize: 13, color: access === 'enabled' ? colors.latte : colors.textMuted }}>
+        {text}
+      </Body>
     </Card>
   );
 }
@@ -332,22 +390,27 @@ function LegacyCoachSettings() {
   };
 
   const looksLikeApiKey = token.trim().startsWith('sk-ant-');
-  const message =
-    looksLikeApiKey
-      ? {
-          text: 'That’s your Anthropic API key, not the coach password. Use the APP_TOKEN value from Render → rep-coach → Environment.',
-          color: colors.sand,
-        }
-      : checking
+  const message = looksLikeApiKey
+    ? {
+        text: 'That’s your Anthropic API key, not the coach password. Use the APP_TOKEN value from Render → rep-coach → Environment.',
+        color: colors.sand,
+      }
+    : checking
       ? { text: 'Checking… this can take up to a minute if the coach was asleep.', color: colors.textMuted }
       : dirty
         ? null
         : status === 'ok'
           ? { text: 'Connected ✓ Your coach is ready.', color: colors.latte }
           : status === 'unauthorized'
-            ? { text: 'Wrong coach password. Use the APP_TOKEN value from Render → rep-coach → Environment (not your Anthropic API key).', color: colors.sand }
+            ? {
+                text: 'Wrong coach password. Use the APP_TOKEN value from Render → rep-coach → Environment (not your Anthropic API key).',
+                color: colors.sand,
+              }
             : status === 'unreachable'
-              ? { text: 'Can’t reach the coach link. Check the link (it should start with https://) and your internet.', color: colors.sand }
+              ? {
+                  text: 'Can’t reach the coach link. Check the link (it should start with https://) and your internet.',
+                  color: colors.sand,
+                }
               : null;
 
   return (

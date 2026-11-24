@@ -19,7 +19,9 @@ export default function AddFriend() {
 
   useEffect(() => {
     const t = setTimeout(() => {
-      searchUsers(q).then(setResults).catch((e) => setErr((e as Error).message));
+      searchUsers(q)
+        .then(setResults)
+        .catch((e) => setErr((e as Error).message));
     }, 250);
     return () => clearTimeout(t);
   }, [q]);
@@ -38,7 +40,9 @@ export default function AddFriend() {
     <Screen padTop={false} contentStyle={{ gap: space(4) }}>
       <Field value={q} onChangeText={setQ} placeholder="Search @username or name" autoCapitalize="none" autoCorrect={false} autoFocus />
       {err ? <Body style={{ color: colors.sand, fontSize: 14 }}>{err}</Body> : null}
-      {q.trim().length >= 2 && results.length === 0 ? <Body muted>No one found. Check the spelling, or send them your invite link instead.</Body> : null}
+      {q.trim().length >= 2 && results.length === 0 ? (
+        <Body muted>No one found. Check the spelling, or send them your invite link instead.</Body>
+      ) : null}
       <View>
         {results.map((p) => (
           <View key={p.id} style={{ paddingVertical: space(3), borderBottomWidth: 1, borderBottomColor: colors.line }}>

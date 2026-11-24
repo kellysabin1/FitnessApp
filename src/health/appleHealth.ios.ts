@@ -47,9 +47,15 @@ export async function fetchAppleHealthDays(days = 7): Promise<HealthDay[]> {
     const filter = { date: { startDate: start, endDate: end } };
     const [steps, energy, rhr, hrv] = await Promise.all([
       queryStatisticsForQuantity('HKQuantityTypeIdentifierStepCount', ['cumulativeSum'], { filter, unit: 'count' }).catch(() => undefined),
-      queryStatisticsForQuantity('HKQuantityTypeIdentifierActiveEnergyBurned', ['cumulativeSum'], { filter, unit: 'kcal' }).catch(() => undefined),
-      queryStatisticsForQuantity('HKQuantityTypeIdentifierRestingHeartRate', ['discreteAverage'], { filter, unit: 'count/min' }).catch(() => undefined),
-      queryStatisticsForQuantity('HKQuantityTypeIdentifierHeartRateVariabilitySDNN', ['discreteAverage'], { filter, unit: 'ms' }).catch(() => undefined),
+      queryStatisticsForQuantity('HKQuantityTypeIdentifierActiveEnergyBurned', ['cumulativeSum'], { filter, unit: 'kcal' }).catch(
+        () => undefined,
+      ),
+      queryStatisticsForQuantity('HKQuantityTypeIdentifierRestingHeartRate', ['discreteAverage'], { filter, unit: 'count/min' }).catch(
+        () => undefined,
+      ),
+      queryStatisticsForQuantity('HKQuantityTypeIdentifierHeartRateVariabilitySDNN', ['discreteAverage'], { filter, unit: 'ms' }).catch(
+        () => undefined,
+      ),
     ]);
     out.push({
       date: todayKey(start),

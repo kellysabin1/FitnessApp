@@ -1,6 +1,6 @@
 import { Text, View } from 'react-native';
 import { Row } from '../components/ui';
-import { colors, fonts, space } from '../theme';
+import { colors, fonts } from '../theme';
 
 /** Avatar initial + name + @username row. */
 export function Person({ name, username, right }: { name: string; username: string; right?: React.ReactNode }) {

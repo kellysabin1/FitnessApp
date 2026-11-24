@@ -36,7 +36,15 @@ export default function LogBody() {
       <Body muted>Log whatever you have — even just weight. Weigh-ins work best first thing in the morning.</Body>
       <Field label="Date" value={date} onChangeText={setDate} placeholder="YYYY-MM-DD" />
       <Row>
-        <Field style={{ flex: 1 }} label="Weight" value={weight} onChangeText={setWeight} keyboardType="decimal-pad" suffix={weightLabel(units)} autoFocus />
+        <Field
+          style={{ flex: 1 }}
+          label="Weight"
+          value={weight}
+          onChangeText={setWeight}
+          keyboardType="decimal-pad"
+          suffix={weightLabel(units)}
+          autoFocus
+        />
         <Field style={{ flex: 1 }} label="Body fat" value={bf} onChangeText={setBf} keyboardType="decimal-pad" suffix="%" />
       </Row>
       <Row>

@@ -36,11 +36,10 @@ export default function TargetForm() {
   const workouts = useStore((s) => s.workouts);
   const body = useStore((s) => s.body);
   const health = useStore((s) => s.health);
-  const ctx = { workouts, body, health };
 
   const initialKind = (existing?.kind ?? (KINDS.includes(params.kind as TargetKind) ? params.kind : 'bodyweight')) as TargetKind;
   const [kind, setKind] = useState<TargetKind>(initialKind);
-  const [title, setTitle] = useState(existing ? (existing.autoTitle ? '' : existing.title) : params.title ?? '');
+  const [title, setTitle] = useState(existing ? (existing.autoTitle ? '' : existing.title) : (params.title ?? ''));
   const [exercise, setExercise] = useState(existing?.exercise ?? params.exercise ?? '');
   const [exQuery, setExQuery] = useState('');
   const [measurement, setMeasurement] = useState<MeasurementField>(existing?.measurement ?? 'waistCm');
@@ -48,15 +47,18 @@ export default function TargetForm() {
   const [unit, setUnit] = useState(existing?.unit ?? '');
   const probe = { kind, measurement };
 
-  const autoStart = useMemo(() => suggestedStart(kind, ctx, { exercise, measurement }), [kind, exercise, measurement, workouts, body, health]);
+  const autoStart = useMemo(
+    () => suggestedStart(kind, { workouts, body, health }, { exercise, measurement }),
+    [kind, exercise, measurement, workouts, body, health],
+  );
   const [startText, setStartText] = useState(existing ? fmtTargetValue(existing, existing.startValue, units).replace(/,/g, '') : '');
   // coach suggestions give the target in the user's units already (weights in lb/kg as shown)
   const [targetText, setTargetText] = useState(
-    existing ? fmtTargetValue(existing, existing.targetValue, units).replace(/,/g, '') : params.value ?? '',
+    existing ? fmtTargetValue(existing, existing.targetValue, units).replace(/,/g, '') : (params.value ?? ''),
   );
   const initialWeeks = params.weeks ? parseInt(params.weeks, 10) : 4;
   const [weeks, setWeeks] = useState<number | null>(existing ? null : WEEKS.includes(initialWeeks) ? initialWeeks : null);
-  const [customDays, setCustomDays] = useState(
+  const [customDays, setCustomDays] = useState(() =>
     existing ? String(Math.max(1, Math.round((+new Date(existing.endDate + 'T12:00') - Date.now()) / 86400000))) : String(initialWeeks * 7),
   );
   const [err, setErr] = useState<string | null>(null);
@@ -177,11 +179,27 @@ export default function TargetForm() {
 
       {kind === 'lift' ? (
         <View style={{ gap: space(2) }}>
-          <Field label="Exercise" value={exercise || exQuery} onChangeText={(t) => { setExercise(''); setExQuery(t); }} placeholder="Search, e.g. hip thrust" />
+          <Field
+            label="Exercise"
+            value={exercise || exQuery}
+            onChangeText={(t) => {
+              setExercise('');
+              setExQuery(t);
+            }}
+            placeholder="Search, e.g. hip thrust"
+          />
           {exMatches.length && !exercise ? (
             <Row gap={2} style={{ flexWrap: 'wrap' }}>
               {exMatches.map((m) => (
-                <Chip key={m} label={m} onPress={() => { setExercise(m); setExQuery(''); setStartText(''); }} />
+                <Chip
+                  key={m}
+                  label={m}
+                  onPress={() => {
+                    setExercise(m);
+                    setExQuery('');
+                    setStartText('');
+                  }}
+                />
               ))}
             </Row>
           ) : null}
@@ -190,7 +208,15 @@ export default function TargetForm() {
       {kind === 'measurement' ? (
         <Row gap={2}>
           {(Object.keys(MEASUREMENT_LABEL) as MeasurementField[]).map((m) => (
-            <Chip key={m} label={MEASUREMENT_LABEL[m]} active={measurement === m} onPress={() => { setMeasurement(m); setStartText(''); }} />
+            <Chip
+              key={m}
+              label={MEASUREMENT_LABEL[m]}
+              active={measurement === m}
+              onPress={() => {
+                setMeasurement(m);
+                setStartText('');
+              }}
+            />
           ))}
         </Row>
       ) : null}
@@ -220,7 +246,9 @@ export default function TargetForm() {
         />
       </Row>
       {!isRate(kind) && autoStart != null && !startText ? (
-        <Body muted style={{ fontSize: 12, marginTop: -space(3) }}>Filled in from your logged data — change it if it’s off.</Body>
+        <Body muted style={{ fontSize: 12, marginTop: -space(3) }}>
+          Filled in from your logged data — change it if it’s off.
+        </Body>
       ) : null}
 
       <View style={{ gap: space(2) }}>
@@ -241,13 +269,20 @@ export default function TargetForm() {
         ) : null}
       </View>
 
-      <Field label="Name (optional)" value={title} onChangeText={setTitle} placeholder={targetVal != null ? suggestTitle() : 'e.g. Lose 4 lb before the trip'} />
+      <Field
+        label="Name (optional)"
+        value={title}
+        onChangeText={setTitle}
+        placeholder={targetVal != null ? suggestTitle() : 'e.g. Lose 4 lb before the trip'}
+      />
 
       <Button title={existing ? 'Save changes' : 'Create target'} icon="flag-outline" disabled={!!problem} onPress={save} />
       {problem && targetText ? <Body style={{ color: colors.sand, fontSize: 13, marginTop: -space(3) }}>{problem}</Body> : null}
       {err ? <Body style={{ color: colors.sand, fontSize: 13 }}>{err}</Body> : null}
       {existing ? (
-        <Body muted style={{ fontSize: 12 }}>Changing the target or date keeps the old version in this target’s history.</Body>
+        <Body muted style={{ fontSize: 12 }}>
+          Changing the target or date keeps the old version in this target’s history.
+        </Body>
       ) : null}
     </Screen>
   );

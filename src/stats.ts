@@ -4,8 +4,7 @@ import { todayKey } from './store';
 /** A set that counts: completed and not a warm-up. */
 export const counts = (s: SetEntry) => s.done && !s.warmup;
 
-export const epley1RM = (weightKg: number, reps: number) =>
-  reps <= 1 ? weightKg : weightKg * (1 + reps / 30);
+export const epley1RM = (weightKg: number, reps: number) => (reps <= 1 ? weightKg : weightKg * (1 + reps / 30));
 
 export function finished(workouts: Workout[]) {
   return workouts.filter((w) => w.finishedAt);
@@ -13,8 +12,7 @@ export function finished(workouts: Workout[]) {
 
 export function workoutVolumeKg(w: Workout) {
   let v = 0;
-  for (const ex of w.exercises)
-    for (const s of ex.sets) if (counts(s) && s.reps && s.weightKg) v += s.reps * s.weightKg;
+  for (const ex of w.exercises) for (const s of ex.sets) if (counts(s) && s.reps && s.weightKg) v += s.reps * s.weightKg;
   return v;
 }
 
@@ -40,9 +38,7 @@ export function personalRecords(workouts: Workout[]) {
       }
     }
   }
-  return [...prs.entries()]
-    .map(([name, v]) => ({ name, ...v }))
-    .sort((a, b) => b.date.localeCompare(a.date));
+  return [...prs.entries()].map(([name, v]) => ({ name, ...v })).sort((a, b) => b.date.localeCompare(a.date));
 }
 
 /** Last time an exercise was performed — used to prefill sets (progressive overload). */

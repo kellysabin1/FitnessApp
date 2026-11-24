@@ -1,4 +1,5 @@
 import { PUSH_SERVER_URL, socialEnabled } from './config';
+import { hasConsent } from './consent';
 import { accessToken } from './social/api';
 import { useStore } from './store';
 
@@ -9,8 +10,7 @@ export class ServerNotConfigured extends Error {
 }
 
 /** Legacy setup: a coach link + shared coach password typed into You → Coach. */
-export const isCoachConfigured = (server: { url: string; token: string }) =>
-  !!server.url.trim() && !!server.token.trim();
+export const isCoachConfigured = (server: { url: string; token: string }) => !!server.url.trim() && !!server.token.trim();
 
 /** Signed-in users reach the coach with their rep. login — no link or password needed. */
 export const usesAccountForCoach = () => socialEnabled() && !!useStore.getState().account?.username;
@@ -48,6 +48,10 @@ export async function checkCoachAccess(): Promise<CoachAccess> {
 
 /** POST JSON to the rep. server (AI coach, Oura sign-in). Uses your login when signed in. */
 export async function serverPost<T>(path: string, body: unknown): Promise<T> {
+  // nothing leaves the phone for the AI until the person has said yes (the server checks too)
+  if (path.startsWith('/coach/') && !hasConsent('ai_coach')) {
+    throw new Error('Allow the AI coach first — open the Coach tab to see what it uses.');
+  }
   let url: string;
   let auth: string;
   if (usesAccountForCoach()) {

@@ -4,8 +4,8 @@ New here? Plain-English guide: [docs/HOW-IT-WORKS.md](docs/HOW-IT-WORKS.md) · T
 
 A moody workout tracker in bone, espresso, burnt olive and oxide with a built-in AI personal trainer.
 
-| Today | Train | Progress | Coach |
-|---|---|---|---|
+| Today                             | Train                             | Progress                             | Coach                             |
+| --------------------------------- | --------------------------------- | ------------------------------------ | --------------------------------- |
 | ![](docs/screenshots/1-today.png) | ![](docs/screenshots/2-train.png) | ![](docs/screenshots/3-progress.png) | ![](docs/screenshots/4-coach.png) |
 
 ## What's in v1
@@ -24,8 +24,8 @@ Everything is stored on your phone. The only things that leave it are what's sen
 
 - **Accounts** (email + password) with an @username; signing in also backs up your workouts.
 - **Friends**: search by @username, send/accept requests.
-- **Two kinds of challenge**: *Any workout* (everything members log counts; an optional shared plan earns
-  bonus points) or *Group plan* (only the plan's workouts count). Plans can use routines or custom workouts.
+- **Two kinds of challenge**: _Any workout_ (everything members log counts; an optional shared plan earns
+  bonus points) or _Group plan_ (only the plan's workouts count). Plans can use routines or custom workouts.
 - **Challenges**: pick a length, what earns points (workouts, daily steps, streaks, a shared group plan),
   invite by link/code or add friends directly. Leaderboard, activity feed with reactions, and nudges.
 - **Notifications** when a friend finishes a workout or nudges you — Web Push from the home-screen app
@@ -100,7 +100,7 @@ Apple Health and Oura sign-in don't work in Expo Go or the browser preview. You 
 
 ### 4. (Optional) Connect Oura
 
-1. Create an app at cloud.ouraring.com → *API Applications*. Redirect URI: `rep://oura`.
+1. Create an app at cloud.ouraring.com → _API Applications_. Redirect URI: `rep://oura`.
 2. Put the client ID and secret in `server/.env` (`OURA_CLIENT_ID`, `OURA_CLIENT_SECRET`).
 3. Create `.env` in the project root with `EXPO_PUBLIC_OURA_CLIENT_ID=<same client id>` and rebuild the app.
 4. In the app: **You → Oura → Connect**.

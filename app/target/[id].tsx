@@ -4,7 +4,7 @@ import { ActivityIndicator, Alert, Platform, Pressable, Text, useWindowDimension
 import { generateTargetPlan } from '@/src/coach';
 import { LineChart } from '@/src/components/charts';
 import { ProgressBar, StatusPill } from '@/src/components/TargetCard';
-import { Body, Button, Card, Divider, Eyebrow, Field, H2, Icon, Row, Screen, SectionHeader, Stat } from '@/src/components/ui';
+import { Body, Button, Card, Divider, Eyebrow, Field, Icon, Row, Screen, SectionHeader, Stat } from '@/src/components/ui';
 import { startPlannedWorkout } from '@/src/splits';
 import { todayKey, uid, useStore } from '@/src/store';
 import { colors, fonts, space } from '@/src/theme';
@@ -51,7 +51,10 @@ export default function TargetScreen() {
   const st = targetStatus(t, ctx);
   const unit = targetUnit(t, units);
   const fmt = (v?: number) => `${fmtTargetValue(t, v, units)}${unit && v != null ? ` ${unit}` : ''}`;
-  const series = targetSeries(t, ctx).map((p) => ({ label: fmtDate(p.date), value: t.kind === 'run' ? p.value / 60 : +fmtTargetValue(t, p.value, units).replace(/,/g, '') }));
+  const series = targetSeries(t, ctx).map((p) => ({
+    label: fmtDate(p.date),
+    value: t.kind === 'run' ? p.value / 60 : +fmtTargetValue(t, p.value, units).replace(/,/g, ''),
+  }));
   const runChart = t.kind === 'run';
   const goalLine = runChart ? t.targetValue / 60 : +fmtTargetValue(t, t.targetValue, units).replace(/,/g, '');
   // check-ins are the main signal for runs/custom; for others they can fill gaps (e.g. a lift done elsewhere)
@@ -60,15 +63,21 @@ export default function TargetScreen() {
 
   const confirm = (title: string, msg: string, action: string, go: () => void) => {
     if (Platform.OS === 'web') {
-      // eslint-disable-next-line no-alert
       if (window.confirm(`${title}\n\n${msg}`)) go();
-    } else Alert.alert(title, msg, [{ text: 'Cancel', style: 'cancel' }, { text: action, style: 'destructive', onPress: go }]);
+    } else
+      Alert.alert(title, msg, [
+        { text: 'Cancel', style: 'cancel' },
+        { text: action, style: 'destructive', onPress: go },
+      ]);
   };
 
   const addCheckin = () => {
     if (checkinVal == null) return;
     const date = todayKey();
-    saveTarget({ ...t, checkins: [...t.checkins.filter((c) => c.date !== date), { date, value: checkinVal }].sort((a, b) => a.date.localeCompare(b.date)) });
+    saveTarget({
+      ...t,
+      checkins: [...t.checkins.filter((c) => c.date !== date), { date, value: checkinVal }].sort((a, b) => a.date.localeCompare(b.date)),
+    });
     setCheckin('');
   };
 
@@ -89,7 +98,15 @@ export default function TargetScreen() {
   const savePlanAsSplit = () => {
     if (!t.plan?.workouts.length) return;
     const now = new Date().toISOString();
-    saveSplit({ id: uid(), name: `For: ${t.title}`, notes: t.plan.summary, source: 'coach', workouts: t.plan.workouts.map((w) => ({ ...w, id: uid() })), createdAt: now, updatedAt: now });
+    saveSplit({
+      id: uid(),
+      name: `For: ${t.title}`,
+      notes: t.plan.summary,
+      source: 'coach',
+      workouts: t.plan.workouts.map((w) => ({ ...w, id: uid() })),
+      createdAt: now,
+      updatedAt: now,
+    });
     setSavedSplit(true);
   };
 
@@ -100,7 +117,11 @@ export default function TargetScreen() {
           title: '',
           headerRight: () => (
             <Row gap={5}>
-              <Pressable hitSlop={12} accessibilityLabel="Edit target" onPress={() => router.push({ pathname: '/target-new', params: { id: t.id } })}>
+              <Pressable
+                hitSlop={12}
+                accessibilityLabel="Edit target"
+                onPress={() => router.push({ pathname: '/target-new', params: { id: t.id } })}
+              >
                 <Icon name="create-outline" color={colors.textMuted} />
               </Pressable>
               <Pressable
@@ -125,24 +146,37 @@ export default function TargetScreen() {
           <StatusPill t={t} />
         </Row>
         <Text style={{ fontFamily: fonts.display, fontSize: 32, color: colors.cream, marginTop: space(1) }}>{t.title}</Text>
-        <Body muted style={{ fontSize: 14 }}>{describeTarget(t, units)}</Body>
+        <Body muted style={{ fontSize: 14 }}>
+          {describeTarget(t, units)}
+        </Body>
 
         <Card tone="croc" style={{ marginTop: space(5) }}>
           <Row gap={4}>
-            {t.kind === 'steps' || t.kind === 'workouts' ? null : <Stat label="Start" value={fmtTargetValue(t, t.startValue, units)} unit={unit} />}
-            <Stat label={t.kind === 'steps' ? '7-day avg' : t.kind === 'workouts' ? 'This week' : 'Now'} value={fmtTargetValue(t, st.current, units)} unit={st.current != null ? unit : undefined} />
+            {t.kind === 'steps' || t.kind === 'workouts' ? null : (
+              <Stat label="Start" value={fmtTargetValue(t, t.startValue, units)} unit={unit} />
+            )}
+            <Stat
+              label={t.kind === 'steps' ? '7-day avg' : t.kind === 'workouts' ? 'This week' : 'Now'}
+              value={fmtTargetValue(t, st.current, units)}
+              unit={st.current != null ? unit : undefined}
+            />
             <Stat label="Target" value={fmtTargetValue(t, t.targetValue, units)} unit={unit} />
           </Row>
           <ProgressBar progress={st.progress} expected={t.status === 'active' ? st.expected : undefined} />
           <Row style={{ justifyContent: 'space-between', marginTop: space(2) }}>
             <Text style={small}>{Math.round(st.progress * 100)}% of the way</Text>
             <Text style={small}>
-              {t.status === 'active' ? `${st.daysLeft} day${st.daysLeft === 1 ? '' : 's'} left · by ${fmtDate(t.endDate)}` : t.status === 'done' ? 'Completed' : 'Archived'}
+              {t.status === 'active'
+                ? `${st.daysLeft} day${st.daysLeft === 1 ? '' : 's'} left · by ${fmtDate(t.endDate)}`
+                : t.status === 'done'
+                  ? 'Completed'
+                  : 'Archived'}
             </Text>
           </Row>
           {t.status === 'active' && st.current != null && !st.reached && st.expected > 0 && st.expected < 1 ? (
             <Text style={[small, { marginTop: space(2) }]}>
-              The tick marks where you’d be on a steady pace. {st.onTrack ? 'You’re keeping up.' : 'You’re a little behind — the plan below can help.'}
+              The tick marks where you’d be on a steady pace.{' '}
+              {st.onTrack ? 'You’re keeping up.' : 'You’re a little behind — the plan below can help.'}
             </Text>
           ) : null}
         </Card>
@@ -159,7 +193,12 @@ export default function TargetScreen() {
               <Icon name="trophy-outline" color={colors.brass} />
               <Text style={{ fontFamily: fonts.bodyMedium, color: colors.cream, fontSize: 15 }}>You hit it.</Text>
             </Row>
-            <Button small title="Mark as done" icon="checkmark" onPress={() => saveTarget({ ...t, status: 'done', completedAt: new Date().toISOString() })} />
+            <Button
+              small
+              title="Mark as done"
+              icon="checkmark"
+              onPress={() => saveTarget({ ...t, status: 'done', completedAt: new Date().toISOString() })}
+            />
           </Card>
         ) : null}
 
@@ -201,17 +240,24 @@ export default function TargetScreen() {
               <Button small title="Save check-in" disabled={checkinVal == null} onPress={addCheckin} />
               {t.checkins.length ? (
                 <View style={{ gap: space(1) }}>
-                  {[...t.checkins].reverse().slice(0, 6).map((c) => (
-                    <Row key={c.date} style={{ justifyContent: 'space-between' }}>
-                      <Text style={small}>{fmtDate(c.date)}</Text>
-                      <Row gap={3}>
-                        <Text style={[small, { color: colors.cream }]}>{fmt(c.value)}</Text>
-                        <Pressable hitSlop={8} accessibilityLabel={`Remove check-in ${c.date}`} onPress={() => saveTarget({ ...t, checkins: t.checkins.filter((x) => x.date !== c.date) })}>
-                          <Icon name="close" size={14} color={colors.textFaint} />
-                        </Pressable>
+                  {[...t.checkins]
+                    .reverse()
+                    .slice(0, 6)
+                    .map((c) => (
+                      <Row key={c.date} style={{ justifyContent: 'space-between' }}>
+                        <Text style={small}>{fmtDate(c.date)}</Text>
+                        <Row gap={3}>
+                          <Text style={[small, { color: colors.cream }]}>{fmt(c.value)}</Text>
+                          <Pressable
+                            hitSlop={8}
+                            accessibilityLabel={`Remove check-in ${c.date}`}
+                            onPress={() => saveTarget({ ...t, checkins: t.checkins.filter((x) => x.date !== c.date) })}
+                          >
+                            <Icon name="close" size={14} color={colors.textFaint} />
+                          </Pressable>
+                        </Row>
                       </Row>
-                    </Row>
-                  ))}
+                    ))}
                 </View>
               ) : null}
             </Card>
@@ -230,7 +276,9 @@ export default function TargetScreen() {
               <View style={{ gap: space(1) }}>
                 <Text style={label}>Each week</Text>
                 {t.plan.weekly.map((x, i) => (
-                  <Body key={i} muted style={{ fontSize: 14 }}>· {x}</Body>
+                  <Body key={i} muted style={{ fontSize: 14 }}>
+                    · {x}
+                  </Body>
                 ))}
               </View>
             ) : null}
@@ -238,13 +286,17 @@ export default function TargetScreen() {
               <View style={{ gap: space(1) }}>
                 <Text style={label}>This week, do this</Text>
                 {t.plan.actions.map((x, i) => (
-                  <Body key={i} muted style={{ fontSize: 14 }}>· {x}</Body>
+                  <Body key={i} muted style={{ fontSize: 14 }}>
+                    · {x}
+                  </Body>
                 ))}
               </View>
             ) : null}
             {t.plan.stepGoal ? (
               <Row style={{ justifyContent: 'space-between' }}>
-                <Body muted style={{ fontSize: 14, flex: 1 }}>Step goal: {t.plan.stepGoal.toLocaleString()} / day</Body>
+                <Body muted style={{ fontSize: 14, flex: 1 }}>
+                  Step goal: {t.plan.stepGoal.toLocaleString()} / day
+                </Body>
                 {stepGoal === t.plan.stepGoal ? (
                   <Text style={[small, { color: colors.olive }]}>In use ✓</Text>
                 ) : (
@@ -266,14 +318,24 @@ export default function TargetScreen() {
             {t.plan.workouts.map((w) => (
               <Card key={w.id} style={{ padding: space(4) }}>
                 <Text style={{ fontFamily: fonts.display, fontSize: 20, color: colors.cream }}>{w.title}</Text>
-                {w.focus ? <Body muted style={{ fontSize: 13 }}>{w.focus}</Body> : null}
+                {w.focus ? (
+                  <Body muted style={{ fontSize: 13 }}>
+                    {w.focus}
+                  </Body>
+                ) : null}
                 {w.exercises.map((e, k) => (
                   <Text key={k} style={[small, { marginTop: 2 }]}>
                     {e.name}
                     {e.sets ? <Text style={{ color: colors.textFaint }}>{`  ${e.sets} × ${e.reps ?? ''}`}</Text> : null}
                   </Text>
                 ))}
-                <Button small title="Start" icon="play" style={{ marginTop: space(3) }} onPress={() => router.push(`/workout/${startPlannedWorkout(w.title, w.exercises)}`)} />
+                <Button
+                  small
+                  title="Start"
+                  icon="play"
+                  style={{ marginTop: space(3) }}
+                  onPress={() => router.push(`/workout/${startPlannedWorkout(w.title, w.exercises)}`)}
+                />
               </Card>
             ))}
             <Button
@@ -300,7 +362,9 @@ export default function TargetScreen() {
             {busy ? (
               <Row gap={2} style={{ marginTop: space(2) }}>
                 <ActivityIndicator color={colors.latte} />
-                <Body muted style={{ fontSize: 13 }}>Building your plan — this can take up to a minute.</Body>
+                <Body muted style={{ fontSize: 13 }}>
+                  Building your plan — this can take up to a minute.
+                </Body>
               </Row>
             ) : null}
             {err ? <Body style={{ color: colors.sand, fontSize: 14, marginTop: space(2) }}>{err}</Body> : null}
@@ -323,11 +387,22 @@ export default function TargetScreen() {
         <Divider />
         {t.status === 'active' ? (
           <Row gap={2}>
-            <Button small variant="secondary" title="Mark done" style={{ flex: 1 }} onPress={() => saveTarget({ ...t, status: 'done', completedAt: new Date().toISOString() })} />
+            <Button
+              small
+              variant="secondary"
+              title="Mark done"
+              style={{ flex: 1 }}
+              onPress={() => saveTarget({ ...t, status: 'done', completedAt: new Date().toISOString() })}
+            />
             <Button small variant="ghost" title="Archive" style={{ flex: 1 }} onPress={() => saveTarget({ ...t, status: 'archived' })} />
           </Row>
         ) : (
-          <Button small variant="secondary" title="Make active again" onPress={() => saveTarget({ ...t, status: 'active', completedAt: undefined })} />
+          <Button
+            small
+            variant="secondary"
+            title="Make active again"
+            onPress={() => saveTarget({ ...t, status: 'active', completedAt: undefined })}
+          />
         )}
         <View style={{ height: space(10) }} />
       </Screen>

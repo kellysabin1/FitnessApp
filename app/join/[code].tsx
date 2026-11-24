@@ -18,13 +18,19 @@ export default function JoinFromLink() {
     if (!ready && code) useStore.setState({ pendingInvite: String(code).toUpperCase() });
   }, [ready, code]);
 
-  useEffect(() => {
-    if (!ready || !code) return;
+  // joining shares challenge-day workouts and steps, so it takes a tap — never automatic
+  const [busy, setBusy] = useState(false);
+  const join = () => {
+    if (!code) return;
+    setBusy(true);
     useStore.setState({ pendingInvite: undefined });
     joinChallenge(code)
       .then((id) => router.replace({ pathname: '/challenge/[id]', params: { id } }))
-      .catch((e) => setErr((e as Error).message));
-  }, [ready, code]);
+      .catch((e) => {
+        setErr((e as Error).message);
+        setBusy(false);
+      });
+  };
 
   return (
     <Screen>
@@ -47,7 +53,14 @@ export default function JoinFromLink() {
             <Button title="Create account / sign in" onPress={() => router.replace('/welcome')} />
           </>
         ) : (
-          <Body muted>Joining…</Body>
+          <>
+            <Body muted style={{ fontSize: 14 }}>
+              Members will see your workouts (exercises, sets, weights, reps) and daily steps from the challenge dates only — never your
+              body measurements. Leave any time.
+            </Body>
+            <Button title="Join challenge" icon="trophy-outline" loading={busy} onPress={join} />
+            <Button title="Not now" variant="ghost" small onPress={() => router.replace('/')} />
+          </>
         )}
       </Card>
     </Screen>

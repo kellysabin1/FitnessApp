@@ -94,7 +94,9 @@ function WorkoutEditor({
     const t = q.trim().toLowerCase();
     if (!t) return [];
     const EXERCISES = allExercises();
-    const found = EXERCISES.filter((e) => !exercises.includes(e.name) && (e.name.toLowerCase().includes(t) || e.muscle.toLowerCase().includes(t)))
+    const found = EXERCISES.filter(
+      (e) => !exercises.includes(e.name) && (e.name.toLowerCase().includes(t) || e.muscle.toLowerCase().includes(t)),
+    )
       .slice(0, 8)
       .map((e) => e.name);
     const exact = EXERCISES.some((e) => e.name.toLowerCase() === t) || exercises.some((e) => e.toLowerCase() === t);
@@ -132,7 +134,9 @@ function WorkoutEditor({
           ))}
         </Row>
       ) : (
-        <Body muted style={{ fontSize: 13 }}>Search below and tap to add.</Body>
+        <Body muted style={{ fontSize: 13 }}>
+          Search below and tap to add.
+        </Body>
       )}
       <Field value={q} onChangeText={setQ} placeholder="Search exercises (e.g. hip thrust, pilates)" autoCapitalize="none" />
       {matches.length ? (

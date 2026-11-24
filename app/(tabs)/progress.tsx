@@ -107,7 +107,11 @@ export default function Progress() {
 
       <SectionHeader title="Weight" action="+ Log" onAction={() => router.push('/log-body')} />
       {series.length < 2 ? (
-        <Empty icon="scale-outline" title="Log a few weigh-ins" text="Once you have two or more, your trend line shows up here. Apple Health weigh-ins import automatically.">
+        <Empty
+          icon="scale-outline"
+          title="Log a few weigh-ins"
+          text="Once you have two or more, your trend line shows up here. Apple Health weigh-ins import automatically."
+        >
           <Button title="Log weight" small onPress={() => router.push('/log-body')} />
         </Empty>
       ) : (
@@ -139,17 +143,25 @@ export default function Progress() {
       <SectionHeader title="Recovery" />
       {hasRecovery ? (
         <Card>
-          <Body muted style={{ fontSize: 13, marginBottom: space(3) }}>Sleep, last 14 nights (h)</Body>
+          <Body muted style={{ fontSize: 13, marginBottom: space(3) }}>
+            Sleep, last 14 nights (h)
+          </Body>
           <Bars data={sleep} width={chartW} goal={7.5} color={colors.mocha} highlight={colors.olive} height={90} />
           {hrv.length > 1 ? (
             <>
-              <Body muted style={{ fontSize: 13, marginTop: space(6), marginBottom: space(3) }}>HRV trend (ms)</Body>
+              <Body muted style={{ fontSize: 13, marginTop: space(6), marginBottom: space(3) }}>
+                HRV trend (ms)
+              </Body>
               <LineChart data={hrv} width={chartW} height={100} color={colors.latte} />
             </>
           ) : null}
         </Card>
       ) : (
-        <Empty icon="moon-outline" title="No recovery data yet" text="Connect Apple Health (RingConn syncs through it) or Oura in the You tab to see sleep and HRV.">
+        <Empty
+          icon="moon-outline"
+          title="No recovery data yet"
+          text="Connect Apple Health (RingConn syncs through it) or Oura in the You tab to see sleep and HRV."
+        >
           <Button title="Connect a wearable" small variant="secondary" onPress={() => router.push('/you')} />
         </Empty>
       )}
@@ -164,7 +176,15 @@ export default function Progress() {
               </Text>
             ) : null}
             {measurements.map((m, i) => (
-              <Row key={m.id} style={{ paddingVertical: space(3), borderTopWidth: i || bf ? 1 : 0, borderTopColor: colors.line, justifyContent: 'space-between' }}>
+              <Row
+                key={m.id}
+                style={{
+                  paddingVertical: space(3),
+                  borderTopWidth: i || bf ? 1 : 0,
+                  borderTopColor: colors.line,
+                  justifyContent: 'space-between',
+                }}
+              >
                 <Text style={{ fontFamily: fonts.bodyMedium, color: colors.cream }}>
                   {new Date(m.date + 'T12:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                 </Text>
